@@ -24,6 +24,8 @@ type
     AcGotoInteropSubIFD: TAction;
     AcFileOpen: TAction;
     AcFileQuit: TAction;
+    AcFileReload: TAction;
+    AcHelpAbout: TAction;
     ActionList: TActionList;
     CbHexAddressMode: TCheckBox;
     CbHexSingleBytes: TCheckBox;
@@ -34,20 +36,24 @@ type
     AnalysisInfo: TLabel;
     MainMenu: TMainMenu;
     MainPageControl: TPageControl;
-    MenuItem1: TMenuItem;
-    MenuItem10: TMenuItem;
-    MenuItem11: TMenuItem;
-    MenuItem12: TMenuItem;
+    MnuTIFF: TMenuItem;
+    MnuFileSeparator1: TMenuItem;
+    MnuHelpAbout: TMenuItem;
+    MnuHelp: TMenuItem;
+    MnuFileOpen: TMenuItem;
+    MnuFileQuit: TMenuItem;
+    MnuFileSeparator2: TMenuItem;
     MenuItem13: TMenuItem;
-    MnuFileReOpen: TMenuItem;
-    MenuItem2: TMenuItem;
-    MenuItem3: TMenuItem;
-    MenuItem4: TMenuItem;
-    MenuItem5: TMenuItem;
-    MenuItem6: TMenuItem;
-    MenuItem7: TMenuItem;
-    MenuItem8: TMenuItem;
-    MenuItem9: TMenuItem;
+    MnuFileReload: TMenuItem;
+    MnuMostRecentlyUsed: TMenuItem;
+    MnuIFD0: TMenuItem;
+    MnuIFD1: TMenuItem;
+    MnuEXIF: TMenuItem;
+    MnuIFDSeparator2: TMenuItem;
+    MnuGPS: TMenuItem;
+    MnuInterOp: TMenuItem;
+    MnuIFDSeparator1: TMenuItem;
+    MnuFile: TMenuItem;
     OpenDialog: TOpenDialog;
     HexPageControl: TPageControl;
     PageControl1: TPageControl;
@@ -57,15 +63,13 @@ type
     APP1Popup: TPopupMenu;
     RecentFilesPopup: TPopupMenu;
     ScrollBox: TScrollBox;
-    Splitter1: TSplitter;
+    HexSplitter: TSplitter;
     StatusBar: TStatusBar;
     AnalysisGrid: TStringGrid;
     PgImage: TTabSheet;
-    ImageToolBar: TToolBar;
     PgDExifTags: TTabSheet;
     PgDExifThumbTags: TTabSheet;
     PgDExifXML: TTabSheet;
-    TbFit: TToolButton;
     TbGotoSOF1: TToolButton;
     TbGotoSOF2: TToolButton;
     TbGotoSOF3: TToolButton;
@@ -87,6 +91,10 @@ type
     TbNextSegment: TToolButton;
     ToolButton4: TToolButton;
     ToolButton5: TToolButton;
+    ToolButton6: TToolButton;
+    ToolButton7: TToolButton;
+    ToolButton8: TToolButton;
+    ToolButton9: TToolButton;
     XML_SynEdit: TSynEdit;
     SynXMLSyn: TSynXMLSyn;
     PgAnalysis: TTabSheet;
@@ -107,6 +115,8 @@ type
     PgDExif: TTabSheet;
     procedure AcFileOpenExecute(Sender: TObject);
     procedure AcFileQuitExecute(Sender: TObject);
+    procedure AcFileReloadExecute(Sender: TObject);
+    procedure AcHelpAboutExecute(Sender: TObject);
     procedure AcImgFitExecute(Sender: TObject);
     procedure AnalysisGridClick(Sender: TObject);
     procedure AnalysisGridPrepareCanvas(sender: TObject; aCol, aRow: Integer;
@@ -121,6 +131,7 @@ type
     procedure HexEditorClick(Sender: TObject);
     procedure HexEditorKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    procedure MainPageControlChange(Sender: TObject);
     procedure MRUMenuManagerRecentFile(Sender:TObject; const AFileName:string);
     procedure TbGotoAPP1ArrowClick(Sender: TObject);
     procedure TbGotoMarker(Sender: TObject);
@@ -301,9 +312,25 @@ begin
   Close;
 end;
 
+procedure TMainForm.AcFileReloadExecute(Sender: TObject);
+begin
+  if FFilename <> '' then
+    OpenFile(FFileName);
+end;
+
+procedure TMainForm.AcHelpAboutExecute(Sender: TObject);
+begin
+  MessageDlg(
+    'Icons displayed in this program are used from the icons8 library' +
+    '(https://icons8.com/) under a "Creative Commons Attribution-NoDerivs 3.0 Unported" license',
+    mtInformation, [mbOK], 0
+  );
+end;
+
 procedure TMainForm.AcImgFitExecute(Sender: TObject);
 begin
-  if AcImgFit.Checked then begin
+  if AcImgFit.Checked then
+  begin
     Image.Parent := PgImage;
     Image.Center := true;
   end else
@@ -1101,7 +1128,7 @@ begin
     IniSection := 'RecentFiles';
     MaxRecent := 16;
     MenuCaptionMask := '&%x - %s';    // & --> create hotkey
-    MenuItem := MnuFileReopen;
+    MenuItem := MnuMostRecentlyUsed;
     PopupMenu := RecentFilesPopup;
     OnRecentFile := @MRUMenuManagerRecentFile;
   end;
@@ -1424,6 +1451,9 @@ procedure TMainForm.GotoOffset(AOffset: Int64);
 var
   sel: TKHexEditorSelection;
 begin
+  if FBuffer = nil then
+    exit;
+
   if AOffset > High(FBuffer^) then begin
     StatusMsg('Out of buffer limits.');
     exit;
@@ -1534,6 +1564,11 @@ begin
   Key := 0;
 end;
 
+procedure TMainForm.MainPageControlChange(Sender: TObject);
+begin
+  AcImgFit.Enabled := MainPageControl.ActivePage = PgImage;
+end;
+
 procedure TMainForm.MRUMenuManagerRecentFile(Sender: TObject;
   const AFileName: string);
 begin
@@ -1545,6 +1580,7 @@ var
   i, j: Integer;
   t: TTagEntry;
   L: TStringList;
+  crs: TCursor;
 begin
   if AFileName = '' then begin
     ShowMessage('No file selected.');
@@ -1557,41 +1593,49 @@ begin
 
   FFilename := AFilename;
 
-  FreeAndNil(FImgData);
-  FImgData := TImgData.Create;
-  FImgData.ProcessFile(AFileName);
-  FMotorolaOrder := FImgData.MotorolaOrder;
-  FWidth := FImgData.Width;
-  FHeight := FImgData.Height;
-
-  Populate_dExifGrid(false);
-  Populate_dExifGrid(true);
-
-  HexEditor.LoadFromFile(AFileName);
-  FBuffer := THexEditorOpener(HexEditor).Buffer;
-  FBufferSize := THexEditorOpener(HexEditor).Size;
-  FCurrOffset := 0;
-  HexEditorClick(nil);
-
-  ScanIFDs;
-  UpdateIFDs;
-  UpdateMarkers;
-
-  L := FImgData.MetadataToXML;
+  crs := Screen.Cursor;
+  Screen.Cursor := crHourglass;
   try
-    XML_SynEdit.Lines.Assign(L);
+    FreeAndNil(FImgData);
+    FImgData := TImgData.Create;
+    FImgData.ProcessFile(AFileName);
+    FMotorolaOrder := FImgData.MotorolaOrder;
+    FWidth := FImgData.Width;
+    FHeight := FImgData.Height;
+
+    Populate_dExifGrid(false);
+    Populate_dExifGrid(true);
+
+    HexEditor.LoadFromFile(AFileName);
+    FBuffer := THexEditorOpener(HexEditor).Buffer;
+    FBufferSize := THexEditorOpener(HexEditor).Size;
+    FCurrOffset := 0;
+    HexEditorClick(nil);
+
+    ScanIFDs;
+    UpdateIFDs;
+    UpdateMarkers;
+
+    L := FImgData.MetadataToXML;
+    try
+      XML_SynEdit.Lines.Assign(L);
+    finally
+      L.Free;
+    end;
+
+    Image.Picture.LoadFromFile(AFileName);
+    Image.Width := FWidth;
+    Image.Height := FHeight;
+    AcImgFitExecute(nil);
+
+    FMRUMenuManager.AddToRecent(AFileName);
+    AcFileReload.Enabled := true;
+
+    Caption := Format('Exif Spy - "%s"', [FFilename]);
+
   finally
-    L.Free;
+    Screen.Cursor := crs;
   end;
-
-  Image.Picture.LoadFromFile(AFileName);
-  Image.Width := FWidth;
-  Image.Height := FHeight;
-  AcImgFitExecute(nil);
-
-  FMRUMenuManager.AddToRecent(AFileName);
-
-  Caption := Format('Exif Spy - "%s"', [FFilename]);
 end;
 
 procedure TMainForm.Populate_dExifGrid(Thumbs: Boolean);
