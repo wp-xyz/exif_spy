@@ -17,12 +17,12 @@ object MainForm: TMainForm
     Height = 585
     Top = 22
     Width = 1140
-    ActivePage = PgImage
+    ActivePage = PgHex
     Align = alClient
     BorderSpacing.Left = 4
     BorderSpacing.Right = 4
     BorderSpacing.Bottom = 4
-    TabIndex = 1
+    TabIndex = 0
     TabOrder = 0
     OnChange = MainPageControlChange
     object PgHex: TTabSheet
@@ -38,7 +38,7 @@ object MainForm: TMainForm
         AddressMode = eamDec
         AddressPrefix = '$'
         AddressSize = 10
-        Align = alClient
+        Align = alLeft
         Colors.Separators = clSilver
         Colors.VertLines = clSilver
         DigitGrouping = 1
@@ -94,8 +94,6 @@ object MainForm: TMainForm
         Height = 492
         Top = 42
         Width = 5
-        Align = alRight
-        ResizeAnchor = akRight
       end
       object StatusBar: TStatusBar
         Left = 0
@@ -176,14 +174,14 @@ object MainForm: TMainForm
         end
         object ToolButton2: TToolButton
           Left = 27
-          Height = 5
+          Height = 22
           Top = 0
           Caption = 'ToolButton2'
           Style = tbsDivider
         end
         object ToolButton1: TToolButton
           Left = 825
-          Height = 5
+          Height = 22
           Top = 0
           Caption = 'ToolButton1'
           Style = tbsDivider
@@ -301,7 +299,7 @@ object MainForm: TMainForm
         end
         object ToolButton3: TToolButton
           Left = 856
-          Height = 8
+          Height = 22
           Top = 0
           Caption = 'ToolButton3'
           Style = tbsSeparator
@@ -319,7 +317,7 @@ object MainForm: TMainForm
         Height = 492
         Top = 42
         Width = 428
-        Align = alRight
+        Align = alClient
         BevelOuter = bvNone
         ClientHeight = 492
         ClientWidth = 428
