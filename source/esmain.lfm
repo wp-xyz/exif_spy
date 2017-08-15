@@ -176,14 +176,14 @@ object MainForm: TMainForm
         end
         object ToolButton2: TToolButton
           Left = 27
-          Height = 22
+          Height = 5
           Top = 0
           Caption = 'ToolButton2'
           Style = tbsDivider
         end
         object ToolButton1: TToolButton
           Left = 825
-          Height = 22
+          Height = 5
           Top = 0
           Caption = 'ToolButton1'
           Style = tbsDivider
@@ -301,7 +301,7 @@ object MainForm: TMainForm
         end
         object ToolButton3: TToolButton
           Left = 856
-          Height = 22
+          Height = 8
           Top = 0
           Caption = 'ToolButton3'
           Style = tbsSeparator

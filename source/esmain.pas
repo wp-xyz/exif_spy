@@ -150,6 +150,7 @@ type
     FWidth: Integer;
     FHeight: Integer;
     IFDList: array[0..4] of Int64;
+    FCurrIFDIndex: Integer;
     FMRUMenuManager : TMRUMenuManager;
     function DisplayGenericMarker(AOffset: Int64): Boolean;
     function DisplayMarker(AOffset: Int64): Boolean;
@@ -654,7 +655,10 @@ begin
     if not GetExifIntValue(AOffset, numbytes, val) then
       exit;
 
-    pTag := FindExifTag(val);
+    if FCurrIFDIndex = INDEX_GPS then
+      pTag := FindGpsTag(val)
+    else
+      pTag := FindExifTag(val);
     if pTag = nil then
       s := 'unknown'
     else
@@ -709,7 +713,7 @@ begin
     AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
     AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
     s := IntToStr(val);
-    if val > 4 then
+    if ds > 4 then
       s := s + ' --> ' + GetExifValue(ATiffHeaderOffset + val, dt, ds);
     AnalysisGrid.Cells[2, j] := s;
     AnalysisGrid.Cells[3, j] := '   if L <= 4: Data value, else: Offset to data from TIFF header';
@@ -1223,12 +1227,8 @@ begin
          Move(FBuffer^[AOffset], dw, 4);
          AValue := BEToN(dw);
        end;
-    8: begin
-         Move(FBuffer^[AOffset], qw, 8);
-         AValue := BEToN(qw);
-       end;
     else
-      exit;
+      raise Exception.Create('This integer data type is not supporred.');
   end;
   Result := true;
 end;
@@ -1259,13 +1259,8 @@ begin
          if FMotorolaOrder then dw := BEToN(dw);
          AValue := dw;
        end;
-    8: begin
-         Move(FBuffer^[AOffset], qw, 8);
-         if FMotorolaOrder then qw := BEToN(qw);
-         AValue := qw;
-       end;
     else
-      exit;
+      raise Exception.Create('This integer datatype is not supported.');
   end;
   Result := true;
 end;
@@ -1956,7 +1951,7 @@ procedure TMainForm.ScanIFDs;
 var
   tiffHeaderStart: Int64;
 
-  // p is at the start of a IFD or SubIFD.
+  // p is at the start of an IFD or SubIFD.
   procedure ScanIFD(p: Int64);
   var
     n: word;
@@ -1967,30 +1962,34 @@ var
     if p > High(FBuffer^) then
       exit;
 
+    // The first 16-bit value is the count of directory entries
     n := PWord(@FBuffer^[p])^;
     if FMotorolaOrder then n := BEToN(n);
     inc(p, 2);
+
+    // Read every directory entry
     for i:=0 to n-1 do begin
       TagID := PWord(@FBuffer^[p])^;
       if FMotorolaOrder then TagID := BEToN(TagID);
-      inc(p, 2);  // --> type
-      inc(p, 2);  // --> size
-      inc(p, 4);  // --> value
+      inc(p, 2);  // --> go to Type field
+      inc(p, 2);  // --> go to Size field
+      inc(p, 4);  // --> go to Value field
+      // Read the data value assigned to the tag
       val := PDWord(@FBuffer^[p])^;
       if FMotorolaOrder then val := BEToN(val);
       if TagID = TAG_EXIF_OFFSET then begin
         IFDList[INDEX_EXIF] := val + tiffHeaderStart;
         ScanIFD(IFDList[INDEX_EXIF]);
       end else
-      if val = TAG_GPS_OFFSET then begin
+      if TagID = TAG_GPS_OFFSET then begin
         IFDList[INDEX_GPS] := val + tiffHeaderStart;
         ScanIFD(IFDList[INDEX_GPS]);
       end else
-      if val = TAG_INTEROP_OFFSET then begin
+      if TagID = TAG_INTEROP_OFFSET then begin
         IFDList[INDEX_INTEROP] := val + tiffHeaderStart;
         ScanIFD(IFDList[INDEX_INTEROP]);
       end;
-      inc(p, 4)  // --> next tag
+      inc(p, 4)  // --> go to next tag
     end;
   end;
 
@@ -2074,7 +2073,8 @@ begin
 
   GotoOffset(p);
 
-  case GetIFDIndex(TComponent(Sender)) of
+  FCurrIFDIndex := GetIFDIndex(TComponent(Sender));
+  case FCurrIFDIndex of
     INDEX_IFD0    : ok := DisplayIFD(p, TiffHeaderOffs, 'IFD0 (Image file directory 0)');
     INDEX_EXIF    : ok := DisplayIFD(p, TIFFHeaderOffs, 'EXIF SubIFD (Image file subdirectory)');
     INDEX_INTEROP : ok := DisplayIFD(p, TiffHeaderOffs, 'Interoperability SubIFD (Image file subdirectory)');
