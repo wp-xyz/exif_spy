@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item4>
     </RequiredPackages>
-    <Units Count="2">
+    <Units Count="5">
       <Unit0>
         <Filename Value="ExifSpy.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -49,6 +49,18 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="esMain"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="dExif\dEXIF.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="dExif\dIPTC.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="dExif\msData.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit4>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
