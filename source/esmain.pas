@@ -1637,6 +1637,8 @@ begin
     if FLoadDExif then begin
       FImgData := TImgData.Create;
       FImgData.ProcessFile(AFileName);
+      if FImgData.ExifObj <> nil then
+        FImgData.ExifObj.ProcessThumbnail;
       FMotorolaOrder := FImgData.MotorolaOrder;
       FWidth := FImgData.Width;
       FHeight := FImgData.Height;
