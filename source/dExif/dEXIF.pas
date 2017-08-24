@@ -2011,7 +2011,7 @@ begin
   ProcessExifDir(start, 9, ThumbLength-12,ThumbTag,'Thumbnail');
 end;
 
-Procedure TImageInfo.removeThumbnail;
+Procedure TImageInfo.RemoveThumbnail;
 var newSize:integer;
 begin
   newSize := ThumbStart-6;

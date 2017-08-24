@@ -139,6 +139,8 @@ type
       Shift: TShiftState);
     procedure MainPageControlChange(Sender: TObject);
     procedure MRUMenuManagerRecentFile(Sender:TObject; const AFileName:string);
+    procedure TagsGridPrepareCanvas(sender: TObject; aCol, aRow: Integer;
+      aState: TGridDrawState);
     procedure TbGotoAPP1ArrowClick(Sender: TObject);
     procedure TbGotoMarker(Sender: TObject);
     procedure TbGotoTIFFHeaderClick(Sender: TObject);
@@ -235,6 +237,10 @@ const
   VALUE_ROW_PANSICHAR     = 20;
   VALUE_ROW_WIDESTRING    = 21;
   VALUE_ROW_PWIDECHAR     = 22;
+
+  PANEL_OFFSET = 0;
+  PANEL_ENDIAN = 1;
+  PANEL_MSG = 2;
 
 const
   MARKER_SOI   = $D8;
@@ -730,21 +736,25 @@ begin
     AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
     if ds <= 4 then
       case dt of
-        2:  begin
+         2: begin
               SetLength(s, ds);
               Move(val, s[1], ds);
             end;
-        7:  begin
+         7: begin
               SetLength(s, ds);
               Move(val, s[1], ds);
             end;
         11: s := FloatToStr(valsng);
        else s := IntToStr(val);
       end
-    else
+    else begin
+      s := IntToStr(val);
       s := s + ' --> ' + GetExifValue(ATiffHeaderOffset + val, dt, ds);
+    end;
     AnalysisGrid.Cells[2, j] := s;
-    AnalysisGrid.Cells[3, j] := '   if L <= 4: Data value, else: Offset to data from TIFF header';
+    if ds <= 4 then
+      AnalysisGrid.Cells[3, j] := '   Data value' else
+      AnalysisGrid.Cells[3, j] := '   Offset to data --> Data';
     inc(AOffset, numbytes);
     inc(j);
   end;
@@ -754,8 +764,13 @@ begin
     exit;
   AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
   AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
-  AnalysisGrid.Cells[2, j] := IntToStr(val);
-  AnalysisGrid.Cells[3, j] := 'Offset to next IFD';
+  if val = 0 then begin
+    AnalysisGrid.Cells[2, j] := IntToStr(val);
+    AnalysisGrid.Cells[3, j] := 'End marker';
+  end else begin
+    AnalysisGrid.Cells[2, j] := IntToStr(val) + ' --> ' + IntToStr(ATiffHeaderOffset + val);
+    AnalysisGrid.Cells[3, j] := 'Offset to next IFD';
+  end;
   inc(AOffset, numbytes);
 
   Result := true;
@@ -1184,7 +1199,7 @@ begin
     RowCount := VALUE_ROW_PWIDECHAR + 1;
     Cells[0, 0] := 'Data type';
     Cells[1, 0] := 'Value';
-    Cells[2, 0] := 'Offset range';
+    Cells[2, 0] := 'Offset range (byte count)';
     Cells[0, VALUE_ROW_INDEX] := 'Offset';
     Cells[0, VALUE_ROW_BITS] := 'Bits';
     Cells[0, VALUE_ROW_BYTE] := 'Byte';
@@ -1280,12 +1295,12 @@ begin
        end;
     2: begin
          Move(FBuffer^[AOffset], w, 2);
-         if FMotorolaOrder then w := BEToN(w);
+         if FMotorolaOrder then w := BEToN(w) else w := LEtoN(w);
          AValue := w;
        end;
     4: begin
          Move(FBuffer^[AOffset], dw, 4);
-         if FMotorolaOrder then dw := BEToN(dw);
+         if FMotorolaOrder then dw := BEToN(dw) else dw := LEtoN(dw);
          AValue := dw;
        end;
     else
@@ -1318,20 +1333,20 @@ begin
        end;
     3: begin  // unsigned short
          n := PWord(@FBuffer^[AOffset])^;
-         if FMotorolaOrder then n := BEToN(n);
+         if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
          Result := IntToStr(n);
        end;
     4: begin  // unsigned long
          n := PDWord(@FBuffer^[AOffset])^;
-         if FMotorolaOrder then n := BEToN(n);
+         if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
          Result := IntToStr(n);
        end;
     5: begin  // unsigned rational
          n := PDWord(@FBuffer^[AOffset])^;
-         if FMotorolaOrder then n := BEToN(n);
+         if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
          Result := IntToStr(n);
          n := PDWord(@FBuffer^[AOffset + 4])^;
-         if FMotorolaOrder then n := BEToN(n);
+         if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
          Result := Result + '/' + IntToStr(n);
        end;
     6: begin   // singed byte
@@ -1342,20 +1357,20 @@ begin
        end;
     8: begin   // signed short
          n := SmallInt(PWord(@FBuffer^[AOffset]));
-         if FMotorolaOrder then n := BEToN(n);
+         if FMotorolaOrder then n := BEToN(n) else LEtoN(n);
          Result := IntToStr(n);
        end;
     9: begin   // signed long
          n := LongInt(PDWord(@FBuffer^[AOffset])^);
-         if FMotorolaOrder then n := BEToN(n);
+         if FMotorolaOrder then n := BEToN(n) else LEtoN(n);
          Result := IntToStr(n);
        end;
    10: begin   // signed rational
          n := LongInt(PDWord(@FBuffer^[AOffset])^);
-         if FMotorolaOrder then n := BEToN(n);
+         if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
          Result := IntToStr(n);
          n := LongInt(PDWord(@FBuffer^[AOffset + 4])^);
-         if FMotorolaOrder then n := BEToN(n);
+         if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
          Result := Result + '/' + IntToStr(n);
        end;
    11: begin  // single
@@ -1606,6 +1621,10 @@ var
   L: TStringList;
   crs: TCursor;
 begin
+  Statusbar.Panels[PANEL_ENDIAN].Text := '';
+  Statusbar.Panels[PANEL_OFFSET].Text := '';
+  Statusbar.Panels[PANEL_MSG].Text := '';
+
   if AFileName = '' then begin
     ShowMessage('No file selected.');
     exit;
@@ -1646,6 +1665,10 @@ begin
       Populate_dExifGrid(false);
       Populate_dExifGrid(true);
 
+      if FImgData.ExifObj.MotorolaOrder then
+        Statusbar.Panels[PANEL_ENDIAN].Text := 'Big endian' else
+        Statusbar.Panels[PANEL_ENDIAN].Text := 'Little endian';
+
       L := FImgData.MetadataToXML;
       try
         XML_SynEdit.Lines.Assign(L);
@@ -1659,6 +1682,7 @@ begin
     Image.Width := FWidth;
     Image.Height := FHeight;
     AcImgFitExecute(nil);
+
 
   finally
     Screen.Cursor := crs;
@@ -1733,6 +1757,10 @@ begin
     Cells[13, 0] := 'CallBack';
     Cells[14, 0] := 'id';
     Cells[15, 0] := 'parentid';
+    ColWidths[0] := 40;
+    ColWidths[4] := 100;
+    ColWidths[5] := 200;
+    ColWidths[6] := 200;
   end;
 end;
 
@@ -1764,7 +1792,7 @@ begin
   // Byte, ShortInt
   if idx <= FBufferSize - SizeOf(byte) then begin
     ValueGrid.Cells[1, VALUE_ROW_BITS] := IntToBin(FBuffer^[idx], 8);
-    ValueGrid.Cells[2, VALUE_ROW_BITS] := Format('%d ... %d', [idx, idx]);
+    ValueGrid.Cells[2, VALUE_ROW_BITS] := Format('%d ... %d (%d)', [idx, idx, SizeOf(byte)]);
     ValueGrid.Cells[1, VALUE_ROW_BYTE] := IntToStr(FBuffer^[idx]);
     ValueGrid.Cells[2, VALUE_ROW_BYTE] := ValueGrid.Cells[2, VALUE_ROW_BITS];
     ValueGrid.Cells[1, VALUE_ROW_SHORTINT] := IntToStr(ShortInt(FBuffer^[idx]));
@@ -1782,11 +1810,11 @@ begin
     buf[0] := FBuffer^[idx];
     buf[1] := FBuffer^[idx+1];
     ValueGrid.Cells[1, VALUE_ROW_WORD] := IntToStr(LEToN(w));
-    ValueGrid.Cells[2, VALUE_ROW_WORD] := Format('%d ... %d', [idx, idx+SizeOf(Word)-1]);
+    ValueGrid.Cells[2, VALUE_ROW_WORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Word)-1, SizeOf(Word)]);
     ValueGrid.Cells[1, VALUE_ROW_SMALLINT] := IntToStr(SmallInt(LEToN(w)));
     ValueGrid.Cells[2, VALUE_ROW_SMALLINT] := ValueGrid.Cells[2, VALUE_ROW_WORD];
     ValueGrid.Cells[1, VALUE_ROW_WORD_BE] := IntToStr(BEToN(w));
-    ValueGrid.Cells[2, VALUE_ROW_WORD_BE] := Format('%d ... %d', [idx, idx+SizeOf(Word)-1]);
+    ValueGrid.Cells[2, VALUE_ROW_WORD_BE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Word)-1, SizeOf(Word)]);
     ValueGrid.Cells[1, VALUE_ROW_SMALLINT_BE] := IntToStr(SmallInt(BEToN(w)));
     ValueGrid.Cells[2, VALUE_ROW_SMALLINT_BE] := ValueGrid.Cells[2, VALUE_ROW_WORD];
   end else begin
@@ -1805,11 +1833,11 @@ begin
     for i:=0 to SizeOf(DWord)-1 do buf[i] :=
       FBuffer^[idx+i];
     ValueGrid.Cells[1, VALUE_ROW_DWORD] := IntToStr(LEToN(dw));
-    ValueGrid.Cells[2, VALUE_ROW_DWORD] := Format('%d ... %d', [idx, idx+SizeOf(DWord)-1]);
+    ValueGrid.Cells[2, VALUE_ROW_DWORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(DWord)-1, SizeOf(DWord)]);
     ValueGrid.Cells[1, VALUE_ROW_LONGINT] := IntToStr(LongInt(LEToN(dw)));
     ValueGrid.Cells[2, VALUE_ROW_LONGINT] := ValueGrid.Cells[2, VALUE_ROW_DWORD];
     ValueGrid.Cells[1, VALUE_ROW_DWORD_BE] := IntToStr(BEToN(dw));
-    ValueGrid.Cells[2, VALUE_ROW_DWORD_BE] := Format('%d ... %d', [idx, idx+SizeOf(DWord)-1]);
+    ValueGrid.Cells[2, VALUE_ROW_DWORD_BE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(DWord)-1, Sizeof(DWord)]);
     ValueGrid.Cells[1, VALUE_ROW_LONGINT_BE] := IntToStr(LongInt(BEToN(dw)));
     ValueGrid.Cells[2, VALUE_ROW_LONGINT_BE] := ValueGrid.Cells[2, VALUE_ROW_DWORD];
   end else begin
@@ -1828,11 +1856,11 @@ begin
     for i:=0 to SizeOf(QWord)-1 do
       buf[i] := FBuffer^[idx+i];
     ValueGrid.Cells[1, VALUE_ROW_QWORD] := Format('%d', [qw]);
-    ValueGrid.Cells[2, VALUE_ROW_QWORD] := Format('%d ... %d', [idx, idx+SizeOf(QWord)-1]);
+    ValueGrid.Cells[2, VALUE_ROW_QWORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(QWord)-1, SizeOf(QWord)]);
     ValueGrid.Cells[1, VALUE_ROW_INT64] := Format('%d', [Int64(qw)]);
     ValueGrid.Cells[2, VALUE_ROW_INT64] := ValueGrid.Cells[2, VALUE_ROW_QWORD];
     ValueGrid.Cells[1, VALUE_ROW_QWORD_BE] := Format('%d', [BEToN(qw)]);
-    ValueGrid.Cells[2, VALUE_ROW_QWORD_BE] := Format('%d ... %d', [idx, idx+SizeOf(QWord)-1]);
+    ValueGrid.Cells[2, VALUE_ROW_QWORD_BE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(QWord)-1, SizeOf(QWord)]);
     ValueGrid.Cells[1, VALUE_ROW_INT64_BE] := Format('%d', [Int64(BEToN(qw))]);
     ValueGrid.Cells[2, VALUE_ROW_INT64_BE] := ValueGrid.Cells[2, VALUE_ROW_QWORD];
   end else begin
@@ -1850,7 +1878,7 @@ begin
   if idx <= FBufferSize - SizeOf(single) then begin
     for i:=0 to SizeOf(single)-1 do buf[i] := FBuffer^[idx+i];
     ValueGrid.Cells[1, VALUE_ROW_SINGLE] := Format('%f', [sng]);
-    ValueGrid.Cells[2, VALUE_ROW_SINGLE] := Format('%d ... %d', [idx, idx+SizeOf(Single)-1]);
+    ValueGrid.Cells[2, VALUE_ROW_SINGLE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Single)-1, SizeOf(Single)]);
   end else begin
     ValueGrid.Cells[1, VALUE_ROW_SINGLE] := '';
     ValueGrid.Cells[2, VALUE_ROW_SINGLE] := '';
@@ -1860,7 +1888,7 @@ begin
   if idx <= FBufferSize - SizeOf(double) then begin
     for i:=0 to SizeOf(double)-1 do buf[i] := FBuffer^[idx+i];
     ValueGrid.Cells[1, VALUE_ROW_DOUBLE] := Format('%f', [dbl]);
-    ValueGrid.Cells[2, VALUE_ROW_DOUBLE] := Format('%d ... %d', [idx, idx+SizeOf(Double)-1]);
+    ValueGrid.Cells[2, VALUE_ROW_DOUBLE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Double)-1, SizeOf(Double)]);
   end else begin
     ValueGrid.Cells[1, VALUE_ROW_DOUBLE] := '';
     ValueGrid.Cells[2, VALUE_ROW_DOUBLE] := '';
@@ -1879,7 +1907,7 @@ begin
     end;
     SetLength(s, j);
     ValueGrid.Cells[1, VALUE_ROW_ANSISTRING] := s;
-    ValueGrid.Cells[2, VALUE_ROW_ANSISTRING] := Format('%d ... %d', [idx, ls * SizeOf(char) + 1]);
+    ValueGrid.Cells[2, VALUE_ROW_ANSISTRING] := Format('%d ... %d (%d)', [idx, idx + ls * SizeOf(char), ls * SizeOf(char) + 1]);
   end else begin
     ValueGrid.Cells[1, VALUE_ROW_ANSISTRING] := '';
     ValueGrid.Cells[2, VALUE_ROW_ANSISTRING] := '';
@@ -1899,7 +1927,7 @@ begin
     if ls = MAX_LEN then s := s + '...';
     Move(FBuffer^[idx], s[1], ls);
     ValueGrid.Cells[1, VALUE_ROW_PANSICHAR] := s;
-    ValueGrid.Cells[2, VALUE_ROW_PANSICHAR] := Format('%d ... %d', [idx, idx + ls]);
+    ValueGrid.Cells[2, VALUE_ROW_PANSICHAR] := Format('%d ... %d (%d)', [idx, idx + ls - 1, ls]);
   end else
   begin
     ValueGrid.Cells[1, VALUE_ROW_PANSICHAR] := '';
@@ -1922,7 +1950,7 @@ begin
     end;
     SetLength(sw, j);
     ValueGrid.Cells[1, VALUE_ROW_WIDESTRING] := UTF8Encode(sw);
-    ValueGrid.Cells[2, VALUE_ROW_WIDESTRING] := Format('%d ... %d', [idx, idx + (ls+1)*SizeOf(wideChar)]);
+    ValueGrid.Cells[2, VALUE_ROW_WIDESTRING] := Format('%d ... %d (%d)', [idx, idx + (ls+1)*SizeOf(wideChar) -1, (ls+1)*SizeOf(WideChar)]);
   end else begin
     ValueGrid.Cells[1, VALUE_ROW_WIDESTRING] := '';
     ValueGrid.Cells[2, VALUE_ROW_WIDESTRING] := '';
@@ -1941,7 +1969,7 @@ begin
     s := {%H-}WideCharLenToString(PWideChar(@FBuffer^[idx]), ls);
     if ls = MAX_LEN then s := s + '...';
     ValueGrid.Cells[1, VALUE_ROW_PWIDECHAR] := s;
-    ValueGrid.Cells[2, VALUE_ROW_PWIDECHAR] := Format('%d ... %d', [idx, idx + ls * SizeOf(widechar)]);
+    ValueGrid.Cells[2, VALUE_ROW_PWIDECHAR] := Format('%d ... %d', [idx, idx + ls * SizeOf(widechar) - 1, ls * Sizeof(widechar)]);
   end else
   begin
     ValueGrid.Cells[1, VALUE_ROW_PWIDECHAR] := '';
@@ -2059,6 +2087,8 @@ begin
   FillChar(IFDList[0], SizeOf(IFDList), -1);
 
   tiffHeaderStart := FindTiffHeader;
+  FMotorolaOrder := PAnsiChar(@FBuffer^[tiffHeaderStart]) = 'MM'; //ord('M');
+
   IFDList[0] := tiffHeaderStart + 8;
   ScanIFD(IFDList[0]);
 
@@ -2078,8 +2108,23 @@ end;
 
 procedure TMainForm.StatusMsg(const AMsg: String);
 begin
-  Statusbar.SimpleText := AMsg;
+  Statusbar.Panels[PANEL_MSG].Text := AMsg;
   Statusbar.Refresh;
+end;
+
+procedure TMainForm.TagsGridPrepareCanvas(sender: TObject; aCol, aRow: Integer;
+  aState: TGridDrawState);
+var
+  ts: TTextStyle;
+  grid: TStringGrid;
+begin
+  grid := TStringGrid(Sender);
+  ts := grid.Canvas.TextStyle;
+  case ACol of
+    0: ts.Alignment := taRightJustify;
+    else exit;
+  end;
+  grid.Canvas.TextStyle := ts;
 end;
 
 procedure TMainForm.TbGotoAPP1ArrowClick(Sender: TObject);
@@ -2350,9 +2395,9 @@ end;
 procedure TMainForm.UpdateStatusbar;
 begin
   if FCurrOffset > -1 then
-    StatusMsg(Format('HexViewer offset: %d ($%x)', [FCurrOffset, FCurrOffset]))
+    Statusbar.Panels[PANEL_OFFSET].Text := Format('HexViewer offset: %d ($%x)', [FCurrOffset, FCurrOffset])
   else
-    StatusMsg('');
+    Statusbar.Panels[PANEL_OFFSET].Text := '';
 end;
 
 procedure TMainForm.ValueGridClick(Sender: TObject);

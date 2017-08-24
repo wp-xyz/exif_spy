@@ -17,21 +17,21 @@ object MainForm: TMainForm
     Height = 571
     Top = 36
     Width = 1140
-    ActivePage = PgDExif
+    ActivePage = PgHex
     Align = alClient
     BorderSpacing.Left = 4
     BorderSpacing.Right = 4
     BorderSpacing.Bottom = 4
-    TabIndex = 2
+    TabIndex = 0
     TabOrder = 0
     OnChange = MainPageControlChange
     object PgHex: TTabSheet
       Caption = 'Hex'
-      ClientHeight = 549
+      ClientHeight = 543
       ClientWidth = 1132
       object HexEditor: TKHexEditor
         Left = 0
-        Height = 484
+        Height = 478
         Hint = 'Go to EXIF SubIFD'
         Top = 42
         Width = 699
@@ -91,16 +91,26 @@ object MainForm: TMainForm
       end
       object HexSplitter: TSplitter
         Left = 699
-        Height = 484
+        Height = 478
         Top = 42
         Width = 5
       end
       object StatusBar: TStatusBar
         Left = 0
         Height = 23
-        Top = 526
+        Top = 520
         Width = 1132
-        Panels = <>
+        Panels = <        
+          item
+            Width = 250
+          end        
+          item
+            Width = 100
+          end        
+          item
+            Width = 50
+          end>
+        SimplePanel = False
       end
       object HexToolBar: TToolBar
         Left = 0
@@ -174,14 +184,14 @@ object MainForm: TMainForm
         end
         object ToolButton2: TToolButton
           Left = 27
-          Height = 5
+          Height = 22
           Top = 0
           Caption = 'ToolButton2'
           Style = tbsDivider
         end
         object ToolButton1: TToolButton
           Left = 825
-          Height = 5
+          Height = 22
           Top = 0
           Caption = 'ToolButton1'
           Style = tbsDivider
@@ -299,7 +309,7 @@ object MainForm: TMainForm
         end
         object ToolButton3: TToolButton
           Left = 856
-          Height = 8
+          Height = 22
           Top = 0
           Caption = 'ToolButton3'
           Style = tbsSeparator
@@ -314,19 +324,19 @@ object MainForm: TMainForm
       end
       object HexPanel: TPanel
         Left = 704
-        Height = 484
+        Height = 478
         Top = 42
         Width = 428
         Align = alClient
         BevelOuter = bvNone
-        ClientHeight = 484
+        ClientHeight = 478
         ClientWidth = 428
         Color = clForm
         ParentColor = False
         TabOrder = 5
         object HexPageControl: TPageControl
           Left = 0
-          Height = 484
+          Height = 478
           Top = 0
           Width = 428
           ActivePage = PgAnalysis
@@ -335,11 +345,11 @@ object MainForm: TMainForm
           TabOrder = 0
           object PgAnalysis: TTabSheet
             Caption = 'Analysis'
-            ClientHeight = 456
+            ClientHeight = 450
             ClientWidth = 420
             object AnalysisGrid: TStringGrid
               Left = 0
-              Height = 435
+              Height = 429
               Top = 21
               Width = 420
               Align = alClient
@@ -414,11 +424,11 @@ object MainForm: TMainForm
     end
     object PgImage: TTabSheet
       Caption = 'Image'
-      ClientHeight = 557
+      ClientHeight = 543
       ClientWidth = 1132
       object ScrollBox: TScrollBox
         Left = 0
-        Height = 557
+        Height = 543
         Top = 0
         Width = 1132
         HorzScrollBar.Increment = 9
@@ -430,12 +440,12 @@ object MainForm: TMainForm
         VertScrollBar.Smooth = True
         VertScrollBar.Tracking = True
         Align = alClient
-        ClientHeight = 553
+        ClientHeight = 539
         ClientWidth = 1128
         TabOrder = 0
         object Image: TImage
           Left = 0
-          Height = 553
+          Height = 539
           Top = 0
           Width = 1128
           Align = alClient
@@ -454,9 +464,9 @@ object MainForm: TMainForm
         Height = 543
         Top = 0
         Width = 1132
-        ActivePage = PgDExifTags
+        ActivePage = PgDExifThumbTags
         Align = alClient
-        TabIndex = 0
+        TabIndex = 1
         TabOrder = 0
         object PgDExifTags: TTabSheet
           Caption = 'Tags'
@@ -475,6 +485,7 @@ object MainForm: TMainForm
             Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goThumbTracking, goSmoothScroll, goCellHints, goTruncCellHints, goCellEllipsis]
             TabOrder = 0
             OnCompareCells = dExifGridCompareCells
+            OnPrepareCanvas = TagsGridPrepareCanvas
           end
         end
         object PgDExifThumbTags: TTabSheet
@@ -494,6 +505,7 @@ object MainForm: TMainForm
             Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goThumbTracking, goSmoothScroll, goCellHints, goTruncCellHints, goCellEllipsis]
             TabOrder = 0
             OnCompareCells = dExifGridCompareCells
+            OnPrepareCanvas = TagsGridPrepareCanvas
           end
         end
         object PgDExifXML: TTabSheet
