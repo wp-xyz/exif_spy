@@ -2087,7 +2087,8 @@ begin
   FillChar(IFDList[0], SizeOf(IFDList), -1);
 
   tiffHeaderStart := FindTiffHeader;
-  FMotorolaOrder := PAnsiChar(@FBuffer^[tiffHeaderStart]) = 'MM'; //ord('M');
+  FMotorolaOrder := (PByte(@FBuffer^[tiffHeaderStart])^ = ord('M')) and
+                    (PByte(@FBuffer^[tiffHeaderStart+1])^ = ord('M'));
 
   IFDList[0] := tiffHeaderStart + 8;
   ScanIFD(IFDList[0]);
