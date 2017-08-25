@@ -188,7 +188,7 @@ type
     procedure LoadFile(const AFileName: String);
     procedure Populate_dExifGrid(Thumbs: Boolean);
     procedure Populate_ValueGrid;
-    procedure ScanIFDs;
+    function ScanIFDs: Boolean;
     procedure StatusMsg(const AMsg: String);
     procedure UpdateIFDs;
     procedure UpdateMarkers;
@@ -1648,26 +1648,25 @@ begin
     FCurrOffset := 0;
     HexEditorClick(nil);
 
-    ScanIFDs;
-    UpdateIFDs;
+    if ScanIFDs then
+      UpdateIFDs;
     UpdateMarkers;
 
     FreeAndNil(FImgData);
     if FLoadDExif then begin
       FImgData := TImgData.Create;
       FImgData.ProcessFile(AFileName);
-      if FImgData.ExifObj <> nil then
-        FImgData.ExifObj.ProcessThumbnail;
       FMotorolaOrder := FImgData.MotorolaOrder;
-      FWidth := FImgData.Width;
-      FHeight := FImgData.Height;
-
-      Populate_dExifGrid(false);
-      Populate_dExifGrid(true);
-
-      if FImgData.ExifObj.MotorolaOrder then
+      if FMotorolaOrder then
         Statusbar.Panels[PANEL_ENDIAN].Text := 'Big endian' else
         Statusbar.Panels[PANEL_ENDIAN].Text := 'Little endian';
+      FWidth := FImgData.Width;
+      FHeight := FImgData.Height;
+      if FImgData.ExifObj <> nil then begin
+        FImgData.ExifObj.ProcessThumbnail;
+        Populate_dExifGrid(false);
+        Populate_dExifGrid(true);
+      end;
 
       L := FImgData.MetadataToXML;
       try
@@ -2030,7 +2029,7 @@ begin
   end;
 end;
 
-procedure TMainForm.ScanIFDs;
+function TMainForm.ScanIFDs: Boolean;
 var
   tiffHeaderStart: Int64;
 
@@ -2084,9 +2083,13 @@ var
   n: word;
   offs: DWord;
 begin
+  Result := false;
   FillChar(IFDList[0], SizeOf(IFDList), -1);
 
   tiffHeaderStart := FindTiffHeader;
+  if tiffHeaderStart = -1 then
+    exit;             // Exit if there is no TIFF header.
+
   FMotorolaOrder := (PByte(@FBuffer^[tiffHeaderStart])^ = ord('M')) and
                     (PByte(@FBuffer^[tiffHeaderStart+1])^ = ord('M'));
 
@@ -2105,6 +2108,8 @@ begin
     IFDList[Index_IFD1] := -1  // there is no IFD1
   else
     IFDList[INDEX_IFD1] := offs + tiffHeaderStart;
+
+  Result := true;
 end;
 
 procedure TMainForm.StatusMsg(const AMsg: String);
