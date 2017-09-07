@@ -11,6 +11,13 @@
       <UseXPManifest Value="True"/>
       <Icon Value="0"/>
     </General>
+    <VersionInfo>
+      <UseVersionInfo Value="True"/>
+      <AutoIncrementBuild Value="True"/>
+      <MinorVersionNr Value="1"/>
+      <BuildNr Value="1"/>
+      <StringTable InternalName="ExifSpy" LegalCopyright="(c) 2017, Werner Pamler" OriginalFilename="ExifSpy" ProductName="ExifSpy" ProductVersion="0.0.0.0"/>
+    </VersionInfo>
     <BuildModes Count="1">
       <Item1 Name="Default" Default="True"/>
     </BuildModes>
@@ -22,21 +29,24 @@
         <FormatVersion Value="1"/>
       </local>
     </RunParams>
-    <RequiredPackages Count="4">
+    <RequiredPackages Count="5">
       <Item1>
-        <PackageName Value="lazmrumenu"/>
+        <PackageName Value="TurboPowerIPro"/>
       </Item1>
       <Item2>
-        <PackageName Value="SynEdit"/>
+        <PackageName Value="lazmrumenu"/>
       </Item2>
       <Item3>
-        <PackageName Value="KControlsLaz"/>
+        <PackageName Value="SynEdit"/>
       </Item3>
       <Item4>
-        <PackageName Value="LCL"/>
+        <PackageName Value="KControlsLaz"/>
       </Item4>
+      <Item5>
+        <PackageName Value="LCL"/>
+      </Item5>
     </RequiredPackages>
-    <Units Count="5">
+    <Units Count="6">
       <Unit0>
         <Filename Value="ExifSpy.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -61,6 +71,14 @@
         <Filename Value="dExif\msData.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit4>
+      <Unit5>
+        <Filename Value="esabout.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="AboutForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="esAbout"/>
+      </Unit5>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

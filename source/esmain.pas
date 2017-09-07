@@ -92,6 +92,7 @@ type
     TbGotoDAC: TToolButton;
     TbGotoDQT: TToolButton;
     MainToolBar: TToolBar;
+    TbGotoAPP13: TToolButton;
     ToolButton3: TToolButton;
     TbNextSegment: TToolButton;
     ToolButton4: TToolButton;
@@ -161,10 +162,12 @@ type
     FCurrIFDIndex: Integer;
     FMRUMenuManager : TMRUMenuManager;
     FLoadDExif: Boolean;
+    procedure DisableAllBtns;
     function DisplayGenericMarker(AOffset: Int64): Boolean;
     function DisplayMarker(AOffset: Int64): Boolean;
     function DisplayMarkerAPP0(AOffset: Int64): Boolean;
     function DisplayMarkerAPP1(AOffset: Int64): Boolean;
+    function DisplayMarkerAPP13(AOffset: Int64): Boolean;
     function DisplayMarkerCOM(AOffset: Int64): Boolean;
     function DisplayMarkerEOI(AOffset: Int64): Boolean;
     function DisplayIFD(AOffset: Int64; ATIFFHeaderOffset: Int64;
@@ -176,6 +179,7 @@ type
     function FindMarker(AMarker: Byte): Int64;
     function FindNextMarker(AMarker: byte; AFromPos: Int64): Int64;
     function FindNextMarker: Int64;
+    function FindSegmentBtn(AMarker: Word): TToolButton;
     function FindTIFFHeader: Int64;
     function GetBEIntValue(AOffset: Int64; AByteCount: Byte; out AValue: Int64): Boolean;
     function GetExifIntValue(AOffset: Int64; AByteCount: Byte; out AValue: Int64): Boolean;
@@ -212,7 +216,8 @@ implementation
 
 uses
   LCLType, StrUtils, Math, IniFiles,
-  KEditCommon;
+  KEditCommon,
+  esAbout;
 
 const
   VALUE_ROW_INDEX         =  1;
@@ -246,8 +251,9 @@ const
   MARKER_SOI   = $D8;
   MARKER_EOI   = $D9;
   MARKER_APP0  = $E0;
-  MARKER_APP1  = $E1;
+  MARKER_APP1  = $E1;       // EXIF
   MARKER_APP2  = $E2;
+  MARKER_APP13 = $ED;       // IPTC
   MARKER_APP14 = $EE;
   MARKER_COM   = $FE;
   MARKER_DAC   = $CC;
@@ -262,18 +268,18 @@ const
   MARKER_SOF6  = $C6;
   MARKER_SOF7  = $C7;
   MARKER_SOF9  = $C9;
-  MARKER_SOF10  = $CA;
-  MARKER_SOF11  = $CB;
-  MARKER_SOF12  = $CC;
-  MARKER_SOF13  = $CD;
-  MARKER_SOF14  = $CE;
-  MARKER_SOF15  = $CF;
+  MARKER_SOF10 = $CA;
+  MARKER_SOF11 = $CB;
+  MARKER_SOF12 = $CC;
+  MARKER_SOF13 = $CD;
+  MARKER_SOF14 = $CE;
+  MARKER_SOF15 = $CF;
   MARKER_SOS   = $DA;
 
-  TAG_EXIF_OFFSET        = $8769;
-  TAG_GPS_OFFSET         = $8825;
-  TAG_INTEROP_OFFSET     = $A005;
-  TAG_SUBIFD_OFFSET      = $014A;
+  TAG_EXIF_OFFSET    = $8769;
+  TAG_GPS_OFFSET     = $8825;
+  TAG_INTEROP_OFFSET = $A005;
+  TAG_SUBIFD_OFFSET  = $014A;
 
   INDEX_IFD0     = 0;
   INDEX_EXIF     = 1;
@@ -340,11 +346,19 @@ end;
 
 procedure TMainForm.AcHelpAboutExecute(Sender: TObject);
 begin
+  with TAboutForm.Create(nil) do
+    try
+      ShowModal;
+    finally
+      Free;
+    end;
+(*
   MessageDlg(
     'Icons displayed in this program are used from the icons8 library' +
     '(https://icons8.com/) under a "Creative Commons Attribution-NoDerivs 3.0 Unported" license',
     mtInformation, [mbOK], 0
   );
+  *)
 end;
 
 procedure TMainForm.AcImgFitExecute(Sender: TObject);
@@ -477,14 +491,15 @@ begin
   GotoOffset(AOffset);
   m := FBuffer^[AOffset + 1];
   case m of
-    MARKER_SOI  : Result := DisplayMarkerSOI(AOffset);
-    MARKER_APP0 : Result := DisplayMarkerAPP0(AOffset);
-    MARKER_APP1 : Result := DisplayMarkerAPP1(AOffset);
-    MARKER_EOI  : Result := DisplayMarkerEOI(AOffset);
-    MARKER_SOF0 : Result := DisplayMarkerSOF0(AOffset);
-    MARKER_SOS  : Result := DisplayMarkerSOS(AOffset);
-    MARKER_COM  : Result := DisplayMarkerCOM(AOffset);
-    else          Result := DisplayGenericMarker(AOffset);
+    MARKER_SOI   : Result := DisplayMarkerSOI(AOffset);
+    MARKER_APP0  : Result := DisplayMarkerAPP0(AOffset);
+    MARKER_APP1  : Result := DisplayMarkerAPP1(AOffset);
+    MARKER_APP13 : Result := DisplayMarkerAPP13(AOffset);
+    MARKER_EOI   : Result := DisplayMarkerEOI(AOffset);
+    MARKER_SOF0  : Result := DisplayMarkerSOF0(AOffset);
+    MARKER_SOS   : Result := DisplayMarkerSOS(AOffset);
+    MARKER_COM   : Result := DisplayMarkerCOM(AOffset);
+    else           Result := DisplayGenericMarker(AOffset);
   end;
 end;
 
@@ -604,7 +619,7 @@ var
 begin
   Result := false;
 
-  AnalysisInfo.Caption := 'APP1 (Application marker 1)';
+  AnalysisInfo.Caption := 'APP1 (Application marker 1, EXIF)';
   AnalysisGrid.RowCount := 3 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -640,6 +655,53 @@ begin
 
   Result := true;
 end;
+
+function TMainForm.DisplayMarkerAPP13(AOffset: Int64): Boolean;
+var
+  s: String;
+  val: Int64;
+  j: Integer;
+  numbytes: Byte;
+begin
+  Result := false;
+
+  AnalysisInfo.Caption := 'APP13 (Application marker 13, IPTC)';
+  AnalysisGrid.RowCount := 3 + AnalysisGrid.FixedRows;
+  j := AnalysisGrid.FixedRows;
+
+  numbytes := 2;
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+  AnalysisGrid.Cells[2, j] := Format('%d ($%.4x)', [val, val]);
+  AnalysisGrid.Cells[3, j] := 'APP31 marker';
+  inc(j);
+  inc(AOffset, numbytes);
+
+  numbytes := 2;
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+  AnalysisGrid.Cells[2, j] := IntToStr(val);
+  AnalysisGrid.Cells[3, j] := 'Size';
+  inc(j);
+  inc(AOffset, numbytes);
+                        (*
+  numbytes := 6;
+  SetLength(s, numbytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'EXIF identifer';
+  inc(j);
+  inc(AOffset, numbytes);
+                          *)
+  Result := true;
+end;
+
 
 function TMainForm.DisplayIFD(AOffset: Int64; ATIFFHeaderOffset: Int64;
   AInfo: String): Boolean;
@@ -1163,6 +1225,32 @@ begin
   FCurrOffset := -1;
   FLoadDExif := true;
 
+  TbGotoSOI.Tag := MARKER_SOI;
+  TbGotoAPP0.Tag := MARKER_APP0;
+  TbGotoAPP1.Tag := MARKER_APP1;
+  TbGotoAPP2.Tag := MARKER_APP2;
+  TbGotoAPP13.Tag := MARKER_APP13;
+  TbGotoSOF0.Tag := MARKER_SOF0;
+  TbGotoSOF1.Tag := MARKER_SOF1;
+  TbGotoSOF2.Tag := MARKER_SOF2;
+  TbGotoSOF3.Tag := MARKER_SOF3;
+  TbGotoDHT.Tag := MARKER_DHT;
+  TbGotoSOF5.Tag := MARKER_SOF5;
+  TbGotoSOF6.Tag := MARKER_SOF6;
+  TbGotoSOF7.Tag := MARKER_SOF7;
+  TbGotoJPG.Tag := MARKER_JPG;
+  TbGotoSOF9.Tag := MARKER_SOF9;
+  TbGotoSOF10.Tag := MARKER_SOF10;
+  TbGotoSOF11.Tag := MARKER_SOF11;
+  TbGotoSOF13.Tag := MARKER_SOF13;
+  TbGotoSOF14.Tag := MARKER_SOF14;
+  TbGotoSOF15.Tag := MARKER_SOF15;
+  TbGotoDAC.Tag := MARKER_DAC;
+  TbGotoCOM.Tag := MARKER_COM;
+  TbGotoDQT.Tag := MARKER_DQT;
+  TbGotoSOS.Tag := MARKER_SOS;
+  TbGotoEOI.Tag := MARKER_EOI;
+
   AcGotoIFD0.Tag := AcGotoTIFFHeader.Tag + 1 + INDEX_IFD0;
   AcGotoEXIFSubIFD.Tag := AcGotoTIFFHeader.Tag + 1 + INDEX_EXIF;
   AcGotoINTEROPSubIFD.Tag := AcGotoTIFFHeader.Tag + 1+ INDEX_INTEROP;
@@ -1393,9 +1481,10 @@ begin
   case AMarker of
     MARKER_SOI   : Result := IfThen(Long, 'Start of image', 'SOI');
     MARKER_EOI   : Result := IfThen(Long, 'End of image', 'EOI');
-    MARKER_APP0  : Result := IfThen(Long, 'Application marker 0', 'APP0 (JFIF)');
-    MARKER_APP1  : Result := IfThen(Long, 'Application marker 1', 'APP1 (EXIF)');
+    MARKER_APP0  : Result := IfThen(Long, 'Application marker 0 - JFIF', 'APP0 (JFIF)');
+    MARKER_APP1  : Result := IfThen(Long, 'Application marker 1 - EXIF', 'APP1 (EXIF)');
     MARKER_APP2  : Result := IfThen(Long, 'Application marker 2', 'APP2');
+    MARKER_APP13 : Result := IfThen(Long, 'Application marker 13 - IPTC', 'APP13 (IPTC)');
     MARKER_APP14 : Result := IfThen(Long, 'Application marker 14 - Copyright', 'APP14)');
     MARKER_COM   : Result := IfThen(Long, 'Comment marker', 'COM');
     MARKER_DAC   : Result := IfThen(Long, 'Definition of arithmetic coding', 'DAC');
@@ -2164,16 +2253,6 @@ begin
   inc(p, 8);  // Size of TIFF header
 
   p := IFDList[GetIFDIndex(TComponent(Sender))];
-  {
-  case TComponent(Sender).Tag of
-    1001: p := FIFDList[0];   // IFD0
-    1002: p := FIFDList[4];   // IFD1
-    1003: p := FIFDList[1];   // EXIF
-    1004: p := FIFDList[3];   // GPS
-    1005: p := FIFDList[2];   // Interop;
-  end;
-  }
-
   if p = -1 then
   begin
     StatusMsg(TAction(Sender).Caption + ' does not exit.');
@@ -2269,6 +2348,8 @@ begin
     m := MARKER_APP1
   else if Sender = TbGotoAPP2 then
     m := MARKER_APP2
+  else if Sender = TbGotoAPP13 then
+    m := MARKER_APP13
   else if Sender = TbGotoDAC then
     m := MARKER_DAC
   else if Sender = TbGotoDHT then
@@ -2360,23 +2441,106 @@ begin
   end;
 end;
 
+procedure TMainForm.DisableAllBtns;
+var
+  i: Integer;
+  tb: TToolButton;
+begin
+  for i:=0 to HexToolbar.ButtonCount-1 do begin
+    tb := HexToolbar.Buttons[i];
+    if tb.Tag >= $C0 then tb.Enabled := false;
+  end;
+end;
+
+function TMainForm.FindSegmentBtn(AMarker: Word): TToolButton;
+var
+  i: Integer;
+  tb: TToolButton;
+begin
+  for i:=0 to HexToolbar.ButtonCount-1 do begin
+    tb := HexToolbar.Buttons[i];
+    if tb.Tag = AMarker then begin
+      Result := tb;
+      exit;
+    end;
+  end;
+  Result := nil;
+end;
+
 procedure TMainForm.UpdateMarkers;
 var
   i: Integer;
   tb: TToolbutton;
-  p: Int64;
+  p: PByte;
+  p0: PByte;
+  pw: PWord;
+  len: Integer;
 begin
+  DisableAllBtns;
+  TbNextSegment.Enabled := FBuffer^[FCurrOffset] = $FF;
+
+  p := @FBuffer[0];
+  p0 := p;
+  if p^ <> $FF then
+    exit;
+  inc(p);
+  if p^ <> MARKER_SOI then
+    exit;
+  tb := FindSegmentBtn(MARKER_SOI);
+  if tb <> nil then tb.Enabled := true;
+  inc(p);
+  i:= 0;
+  while true do begin
+    inc(i);
+    if p - p0 >= FBufferSize then
+      exit;
+    if p^ <> $FF then
+      exit;
+    while (p^ = $FF) do begin
+      inc(p);
+      if p - p0 >= FBufferSize then
+        exit;
+    end;
+    tb := FindSegmentBtn(p^);
+    if tb <> nil then tb.Enabled := true;
+    if p^ = MARKER_SOS then
+      break;
+    inc(p);
+    if p - p0 >= FBufferSize-1 then
+      exit;
+    pw := PWord(p);
+    len := BEToN(pw^);
+    inc(p, len);
+  end;
+  while true do begin
+    if p - p0 >= FBufferSize-1 then
+      exit;
+    if p^ = $FF then begin
+      inc(p);
+      if p^ = MARKER_EOI then begin
+        tb := FindSegmentBtn(MARKER_EOI);
+        if tb <> nil then tb.Enabled := true;
+        exit;
+      end;
+    end;
+    inc(p);
+  end;
+end;
+(*
+
+
   for i:=0 to HexToolbar.ButtonCount-1 do begin
     tb := HexToolbar.Buttons[i];
-    case tb.Caption of
-      'SOI'   : tb.Enabled := FindMarker(MARKER_SOI)   <> -1;
-      'APP0'  : tb.Enabled := FindMarker(MARKER_APP0)  <> -1;
-      'APP1'  : tb.Enabled := FindMarker(MARKER_APP1)  <> -1;
-      'APP2'  : tb.Enabled := FindMarker(MARKER_APP2)  <> -1;
-      'COM'   : tb.Enabled := FindMarker(MARKER_COM)   <> -1;
-      'SOS'   : tb.Enabled := FindMarker(Marker_SOS)   <> -1;
-      'EOI'   : tb.Enabled := FindMarker(Marker_EOI)   <> -1;
-      'SOF0'  : tb.Enabled := FindMarker(MARKER_SOF0)  <> -1;
+    case tb.Tag of
+      MARKER_SOI : tb.Enabled := FindMarker(MARKER_SOI)   <> -1;
+      MARKER_APP0 : tb.Enabled := FindMarker(MARKER_APP0)  <> -1;
+      MARKER_APP1  : tb.Enabled := FindMarker(MARKER_APP1)  <> -1;
+      MARKER_APP2  : tb.Enabled := FindMarker(MARKER_APP2)  <> -1;
+      MARKER_APP13 : tb.Enabled := FindMarker(MARKER_APP13) <> -1;
+      MARKER_COM   : tb.Enabled := FindMarker(MARKER_COM)   <> -1;
+      MARKER_SOS   : tb.Enabled := FindMarker(Marker_SOS)   <> -1;
+      MARKER_EOI   : tb.Enabled := FindMarker(Marker_EOI)   <> -1;
+      MARKER_SOF0  : tb.Enabled := FindMarker(MARKER_SOF0)  <> -1;
       'SOF1'  : tb.Enabled := FindMarker(MARKER_SOF1)  <> -1;
       'SOF2'  : tb.Enabled := FindMarker(Marker_SOF2)  <> -1;
       'SOF3'  : tb.Enabled := FindMarker(Marker_SOF3)  <> -1;
@@ -2397,6 +2561,7 @@ begin
   end;
   TbNextSegment.Enabled := FBuffer^[FCurrOffset] = $FF;
 end;
+*)
 
 procedure TMainForm.UpdateStatusbar;
 begin
