@@ -27,6 +27,7 @@ type
     AcFileReload: TAction;
     AcHelpAbout: TAction;
     AcCfgUseDExif: TAction;
+    AcGotoIPTC: TAction;
     ActionList: TActionList;
     CbHexAddressMode: TCheckBox;
     CbHexSingleBytes: TCheckBox;
@@ -39,6 +40,7 @@ type
     Images24: TImageList;
     MainMenu: TMainMenu;
     MainPageControl: TPageControl;
+    MnuIPTC: TMenuItem;
     MnuCfgUseDExif: TMenuItem;
     MnuCfg: TMenuItem;
     MnuTIFF: TMenuItem;
@@ -66,6 +68,7 @@ type
     HexPanel: TPanel;
     PgHex: TTabSheet;
     APP1Popup: TPopupMenu;
+    APP13Popup: TPopupMenu;
     RecentFilesPopup: TPopupMenu;
     ScrollBox: TScrollBox;
     HexSplitter: TSplitter;
@@ -123,6 +126,7 @@ type
     procedure AcFileOpenExecute(Sender: TObject);
     procedure AcFileQuitExecute(Sender: TObject);
     procedure AcFileReloadExecute(Sender: TObject);
+    procedure AcGotoIPTCExecute(Sender: TObject);
     procedure AcHelpAboutExecute(Sender: TObject);
     procedure AcImgFitExecute(Sender: TObject);
     procedure AnalysisGridClick(Sender: TObject);
@@ -163,6 +167,7 @@ type
     FMRUMenuManager : TMRUMenuManager;
     FLoadDExif: Boolean;
     procedure DisableAllBtns;
+    function DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
     function DisplayGenericMarker(AOffset: Int64): Boolean;
     function DisplayMarker(AOffset: Int64): Boolean;
     function DisplayMarkerAPP0(AOffset: Int64): Boolean;
@@ -186,6 +191,7 @@ type
     function GetExifValue(AOffset: Int64; ADataType, ADataSize: Integer): String;
     function GetMarkerName(AMarker: Byte; Long: Boolean): String;
     function GetValueGridDataSize: Integer;
+    function GotoAdobeImageResource(AResourceID: Word; var AOffset: Int64): Boolean;
     function GotoNextIFD(var AOffset: Int64): Boolean;
     procedure GotoOffset(AOffset: Int64);
     function GotoSubIFD(ATag: Word; var AOffset: Int64; ATiffHeaderOffset: Int64): Boolean;
@@ -344,6 +350,20 @@ begin
     LoadFile(FFileName);
 end;
 
+procedure TMainForm.AcGotoIPTCExecute(Sender: TObject);
+var
+  offs: Int64;
+begin
+  offs := FindMarker(MARKER_APP13);
+  if offs = -1 then
+    exit;
+
+  if GotoAdobeImageResource($0404, offs) then begin
+    GotoOffset(offs);
+    DisplayAdobeImageResource(offs, $0404);
+  end;
+end;
+
 procedure TMainForm.AcHelpAboutExecute(Sender: TObject);
 begin
   with TAboutForm.Create(nil) do
@@ -445,6 +465,174 @@ begin
   sB := dExif_TagsGrid.Cells[BCol, BRow];
   Result := CompareText(sA, sB);
   if dExif_TagsGrid.SortOrder = soDescending then Result := -Result;
+end;
+
+function TMainForm.DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
+var
+  numbytes: Integer;
+  s: String;
+  j, i: Integer;
+  size: Integer;
+  val: Int64;
+  itemCounter: Integer;
+  dssize: Word;
+  len: Integer;
+  recNo: Integer;
+begin
+  Result := false;
+
+  AnalysisInfo.Caption := 'Adobe image resource)';
+  AnalysisGrid.RowCount := 5 + AnalysisGrid.FixedRows;
+  j := AnalysisGrid.FixedRows;
+
+  numbytes := 4;
+  SetLength(s, numbytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+  AnalysisGrid.Cells[2, j] := s;                                  // 8BIM
+  AnalysisGrid.Cells[3, j] := 'Adobe Image Resource signature';
+  inc(j);
+  inc(AOffset, numbytes);
+
+  numbytes := 2;
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  case val of
+    $03E9: s := 'Macintosh print manager print info record';
+    $03ED: s := 'ResolutionInfo structure';
+    $03F3: s := 'Print flags';
+    $03F5: s := 'Color halftoning information';
+    $03F8: s := 'Color transfer functions';
+    $03FD: s := 'EPS information';
+    $03FE: s := 'Quick mask information';
+    $0400: s := 'Layer state information';
+    $0401: s := 'Working path';
+    $0402: s := 'Layers group information';
+    $0403: s := '(obsolete)';
+    $0404: s := 'IPTC-NAA record';
+    $0405: s := 'Image mode for raw format files';
+    $0406: s := 'JPEG quality';
+    $0408: s := '(Photoshop 4.0) Grid and guides information';
+    $040A: s := '(Photoshop 4.0) Copyright flag';
+    $040C: s := '(Photoshop 5.0) Thumbnail resource';
+    $040D: s := '(Photoshop 5.0) Global Angle';
+    $0414: s := '(Photoshop 5.0) Document-specific IDs seed number';
+    $0419: s := '(Photoshop 6.0) Global Altitude';
+    $041A: s := '(Photoshop 6.0) Slices';
+    $041E: s := '(Photoshop 6.0) URL List';
+    $0421: s := '(Photoshop 6.0) Version Info';
+    $0425: s := '(Photoshop 7.0) Caption digest';
+    $0426: s := '(Photoshop 7.0) Print scale';
+    $0428: s := '(Photoshop CS) Pixel Aspect Ratio';
+    else   s := 'not supported';
+  end;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+  AnalysisGrid.Cells[2, j] := Format('%d ($%.4x) --> ' + s, [val, val]);
+  AnalysisGrid.Cells[3, j] := 'Unique identifer of resource';
+  inc(j);
+  inc(AOffset, numbytes);
+
+  numbytes := 1;
+  val := FBuffer^[AOffset];
+  len := val;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+  AnalysisGrid.Cells[2, j] := IntToStr(val);
+  AnalysisGrid.Cells[3, j] := 'Length of resource name';
+  inc(j);
+  inc(AOffset, numbytes);
+
+  numbytes := val;
+  SetLength(s, numbytes);
+  Move(FBuffer^[AOffset+1], s[1], numbytes);
+  if odd(numbytes) then
+    inc(numbytes)
+  else
+    inc(numbytes, 1);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Name of resource';
+  inc(j);
+  inc(AOffset, numbytes);
+
+  numbytes := 4;
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  size := val;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+  AnalysisGrid.Cells[2, j] := IntToStr(val);
+  AnalysisGrid.Cells[3, j] := 'Size of data';
+  inc(j);
+  inc(AOffset, numbytes);
+
+  itemCounter := -1;
+  numbytes := 1;
+  val := FBuffer^[AOffset];
+  while val = $1C do begin
+    AnalysisGrid.RowCount := AnalysisGrid.RowCount + 5;
+    inc(itemCounter);
+
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+    AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+    AnalysisGrid.Cells[2, j] := Format('%d ($%.2x)', [val, val]);
+    AnalysisGrid.Cells[3, j] := 'Marker of dataset #' + IntToStr(itemCounter);
+    inc(j);
+    inc(AOffset, numbytes);
+
+    numbytes := 1;
+    val := FBuffer^[AOffset];
+    recNo := val;
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+    AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+    AnalysisGrid.Cells[2, j] := Format('%d ($%.2x)', [val, val]);
+    AnalysisGrid.Cells[3, j] := 'Record number of dataset #' + IntToStr(itemCounter);
+    inc(j);
+    inc(AOffset, numbytes);
+
+    numbytes := 1;
+    val := FBuffer^[AOffset];
+    s := 'Dataset number of dataset #' + IntToStr(itemCounter);
+    if (recNo = 2) then
+      for i:=0 to High(IPTCTable) do
+        if IPTCTable[i].Tag = val then begin
+          s := s + ': ' + IPTCTable[i].Desc;
+          break;
+        end;
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+    AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+    AnalysisGrid.Cells[2, j] := IntToStr(val);
+    AnalysisGrid.Cells[3, j] := s;
+    inc(j);
+    inc(AOffset, numbytes);
+
+    numbytes := 2;
+    if not GetBEIntValue(AOffset, numbytes, val) then
+      exit;
+    dssize := val;
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+    AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+    AnalysisGrid.Cells[2, j] := IntToStr(val);
+    AnalysisGrid.Cells[3, j] := 'Data field byte count of dataset #' + IntToStr(itemCounter);
+    inc(j);
+    inc(AOffset, numbytes);
+
+    numbytes := dsSize;
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+    AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+    AnalysisGrid.Cells[2, j] := '...';
+    AnalysisGrid.Cells[3, j] := 'Data field of dataset #' + IntToStr(itemCounter);
+    inc(j);
+    inc(AOffset, numbytes);
+
+    numbytes := 1;
+    val := FBuffer^[AOffset];
+  end;
+
+
 end;
 
 function TMainForm.DisplayGenericMarker(AOffset: Int64): Boolean;
@@ -656,6 +844,7 @@ begin
   Result := true;
 end;
 
+// Source: https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
 function TMainForm.DisplayMarkerAPP13(AOffset: Int64): Boolean;
 var
   s: String;
@@ -688,17 +877,17 @@ begin
   AnalysisGrid.Cells[3, j] := 'Size';
   inc(j);
   inc(AOffset, numbytes);
-                        (*
-  numbytes := 6;
+
+  numbytes := 14;
   SetLength(s, numbytes);
   Move(FBuffer^[AOffset], s[1], numbytes);
   AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
   AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
   AnalysisGrid.Cells[2, j] := s;
-  AnalysisGrid.Cells[3, j] := 'EXIF identifer';
+  AnalysisGrid.Cells[3, j] := 'IPTC identifer';
   inc(j);
   inc(AOffset, numbytes);
-                          *)
+
   Result := true;
 end;
 
@@ -1556,6 +1745,63 @@ begin
     VALUE_ROW_PANSICHAR,
     VALUE_ROW_PWIDECHAR  : Result := ExtractLength(ValueGrid.Cells[2, ValueGrid.Row]);
   end;
+end;
+
+function TMainForm.GotoAdobeImageResource(AResourceID: Word;
+  var AOffset: Int64): Boolean;
+type
+  TAPP13Header = packed record
+    Marker: Word;
+    Size: Word;
+    Identifier: Array[1..14] of ansichar;
+  end;
+  PAPP13Header = ^TAPP13Header;
+
+  TAdobeImageResourceHeader = packed record
+    Key: array[1..4] of ansichar;
+    ID: Word;
+    NameLen: Byte;
+  end;
+  PAdobeImageResourceHeader = ^TAdobeImageResourceHeader;
+
+const
+  IPTCKey = 'Photoshop 3.0';
+  AdobeImageResourceKey = '8BIM';
+var
+  i: Int64;
+  s: String;
+  app13hdr: TAPP13Header;
+  imgres: TAdobeImageResourceHeader;
+  size: DWord;
+begin
+  Result := false;
+
+  i := AOffset;
+
+  app13hdr := PAPP13Header(@FBuffer^[i])^;
+  app13hdr.Size := BEToN(app13hdr.Size);
+  if not CompareMem(@app13hdr.Identifier[1], @IPTCKey[1], Length(IPTCKey)) then
+    exit;
+
+  inc(i, SizeOf(app13hdr));
+  repeat
+    imgres := PAdobeImageResourceHeader(@FBuffer^[i])^;
+    imgres.ID := BEtoN(imgres.ID);
+    if not CompareMem(@FBuffer^[i], @AdobeImageResourceKey[1], 4) then
+      exit;
+    if imgres.ID = AResourceID then
+      break;
+    inc(i, SizeOf(imgres));
+    if odd(imgres.NameLen) then
+      inc(i, imgres.NameLen)
+    else
+      inc(i, imgres.NameLen + 1);
+    size := BEToN(PDWord(@FBuffer^[i])^);
+    inc(i, size);
+  until false;
+
+  AOffset := i;
+  Result := true;
 end;
 
 function TMainForm.GotoNextIFD(var AOffset: Int64): Boolean;
