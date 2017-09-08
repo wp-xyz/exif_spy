@@ -31,6 +31,7 @@ type
     ActionList: TActionList;
     CbHexAddressMode: TCheckBox;
     CbHexSingleBytes: TCheckBox;
+    IPTC_TagsGrid: TStringGrid;
     dExif_ThumbTagsGrid: TStringGrid;
     HexEditor: TKHexEditor;
     Image: TImage;
@@ -78,6 +79,7 @@ type
     PgDExifTags: TTabSheet;
     PgDExifThumbTags: TTabSheet;
     PgDExifXML: TTabSheet;
+    PgIPTCTags: TTabSheet;
     TbGotoSOF1: TToolButton;
     TbGotoSOF2: TToolButton;
     TbGotoSOF3: TToolButton;
@@ -196,7 +198,7 @@ type
     procedure GotoOffset(AOffset: Int64);
     function GotoSubIFD(ATag: Word; var AOffset: Int64; ATiffHeaderOffset: Int64): Boolean;
     procedure LoadFile(const AFileName: String);
-    procedure Populate_dExifGrid(Thumbs: Boolean);
+    procedure Populate_dExifGrid(AKind: Integer);
     procedure Populate_ValueGrid;
     function ScanIFDs: Boolean;
     procedure StatusMsg(const AMsg: String);
@@ -1506,12 +1508,9 @@ begin
   for i:=0 to HexToolbar.ButtonCount-1 do
     HexToolbar.Buttons[i].Enabled := false;
 
-  Populate_dExifGrid(false);
-  Populate_dExifGrid(true);
-  {
-  for i:=0 to APP1Popup.Items.Count-1 do
-    APP1Popup.Items[i].Enabled := false;
-  }
+  Populate_dExifGrid(0);  // Exif tags
+  Populate_dExifGrid(1);  // Exif thumbnail tags
+  Populate_dExifGrid(2);  // IPTC tags
 end;
 
 procedure TMainForm.FormDeactivate(Sender: TObject);
@@ -1997,11 +1996,13 @@ begin
         Statusbar.Panels[PANEL_ENDIAN].Text := 'Little endian';
       FWidth := FImgData.Width;
       FHeight := FImgData.Height;
-      if FImgData.ExifObj <> nil then begin
+      if FImgData.HasExif then
         FImgData.ExifObj.ProcessThumbnail;
-        Populate_dExifGrid(false);
-        Populate_dExifGrid(true);
-      end;
+      if FImgData.HasIPTC then
+        FImgData.IPTCObj.ParseIPTCArray;
+      Populate_dExifGrid(0);
+      Populate_dExifGrid(1);
+      Populate_dExifGrid(2);
 
       L := FImgData.MetadataToXML;
       try
@@ -2023,32 +2024,51 @@ begin
   end;
 end;
 
-procedure TMainForm.Populate_dExifGrid(Thumbs: Boolean);
+// AKind = 0  --> dExif
+// AKind = 1  --> dExif thumbnail
+// AKind = 2  --> IPTC
+procedure TMainForm.Populate_dExifGrid(AKind: Integer);
 var
-  tagArray: Array of TTagEntry;
   tagCount: Integer;
   t: TTagEntry;
   i, j: Integer;
   grid: TStringGrid;
+  ok: Boolean;
 begin
-  if thumbs then
-    grid := dExif_ThumbTagsGrid
-  else
-    grid := dExif_TagsGrid;
+  ok := false;
+  case AKind of
+    0: begin
+         grid := dExif_TagsGrid;
+         ok := (FImgData <> nil) and FImgData.HasExif;
+         if ok then
+           tagCount := FImgData.ExifObj.FITagCount;
+       end;
+    1: begin
+         grid := dExif_ThumbTagsGrid;
+         ok := (FImgData <> nil) and FImgData.HasExif;
+         if ok then
+           tagCount := FImgData.ExifObj.FIThumbCount;
+       end;
+    2: begin
+         grid := IPTC_TagsGrid;
+         ok := (FImgData <> nil) and FImgData.HasIPTC;
+         if ok then
+           tagCount := FImgData.IPTCObj.Count;
+       end;
+    else
+       raise Exception.Create('Populate_dExifGrid: AKind unknown.');
+  end;
   grid.ColCount := 16;
 
-  if (FImgData <> nil) and FImgData.HasExif then begin
-    if Thumbs then begin
-      tagArray := FImgData.ExifObj.FIThumbArray;
-      tagCount := FImgData.ExifObj.FIThumbCount;
-    end else begin
-      tagArray := FImgData.ExifObj.FITagArray;
-      tagCount := FImgData.ExifObj.FITagCount;
-    end;
+  if ok then begin
     grid.RowCount := tagCount + grid.FixedRows;
-
     for i:=0 to tagCount-1 do begin
-      t := tagArray[i];
+      case AKind of
+        0: t := FImgData.ExifObj.FITagArray[i];
+        1: t := FImgData.ExifObj.FIThumbArray[i];
+        2: t := FImgData.IPTCObj.ITagArray[i];
+        else raise Exception.Create('Populate_dExifGrid: AKind unknown.');
+      end;
       j := grid.FixedRows + i;
       with grid do begin
         Cells[ 0, j] := IntToStr(i);
@@ -2075,6 +2095,7 @@ begin
     grid.Rows[grid.FixedRows].Clear;
     StatusMsg('No EXIF data found.');
   end;
+
   with grid do begin
     Cells[ 1, 0] := 'TID';
     Cells[ 2, 0] := 'TType';

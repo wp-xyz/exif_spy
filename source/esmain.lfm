@@ -131,7 +131,7 @@ object MainForm: TMainForm
           OnClick = TbGotoMarker
         end
         object TbGotoSOF0: TToolButton
-          Left = 275
+          Left = 206
           Hint = 'Go to "Start-of-frane" marker 0 (SOF0) / Baseline DCT'
           Top = 0
           Caption = 'SOF0'
@@ -148,35 +148,35 @@ object MainForm: TMainForm
           Left = 68
           Hint = 'Go to "Application marker 1" (APP1)'
           Top = 0
-          Caption = 'APP1 (EXIF)'
+          Caption = 'APP1'
           DropdownMenu = APP1Popup
           OnArrowClick = TbGotoAPP1ArrowClick
           OnClick = TbGotoMarker
           Style = tbsDropDown
         end
         object TbGotoAPP2: TToolButton
-          Left = 239
+          Left = 170
           Hint = 'Go to "Application marker 2" (APP2)'
           Top = 0
           Caption = 'APP2'
           OnClick = TbGotoMarker
         end
         object TbGotoEOI: TToolButton
-          Left = 953
+          Left = 884
           Hint = 'Go to "End-of-image" marker (EOI)'
           Top = 0
           Caption = 'EOI'
           OnClick = TbGotoMarker
         end
         object TbGotoCOM: TToolButton
-          Left = 851
+          Left = 782
           Hint = 'Go to "Comment" marker (COM)'
           Top = 0
           Caption = 'COM'
           OnClick = TbGotoMarker
         end
         object TbGotoSOS: TToolButton
-          Left = 919
+          Left = 850
           Hint = 'Go to "Start-of-scan" marker (SOS)'
           Top = 0
           Caption = 'SOS'
@@ -190,141 +190,141 @@ object MainForm: TMainForm
           Style = tbsDivider
         end
         object ToolButton1: TToolButton
-          Left = 948
+          Left = 879
           Height = 22
           Top = 0
           Caption = 'ToolButton1'
           Style = tbsDivider
         end
         object TbGotoSOF1: TToolButton
-          Left = 310
+          Left = 241
           Hint = 'Go to "Start-of-frane" marker 0 (SOF0) / Extended sequential DCT'
           Top = 0
           Caption = 'SOF1'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF2: TToolButton
-          Left = 345
+          Left = 276
           Hint = 'Go to "Start-of-frame 2" marker (SOF2) - Progressive DCT'
           Top = 0
           Caption = 'SOF2'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF3: TToolButton
-          Left = 380
+          Left = 311
           Hint = 'Go to to "Start-of-frame-3" marker (SOF3) - Lossless (sequential)'
           Top = 0
           Caption = 'SOF3'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF5: TToolButton
-          Left = 447
+          Left = 378
           Hint = 'Go to "Start of frame 5" marker (SOF5) - Differential sequential DCT'
           Top = 0
           Caption = 'SOF5'
           OnClick = TbGotoMarker
         end
         object TbGotoDHT: TToolButton
-          Left = 415
+          Left = 346
           Hint = 'Go to "Definition of Huffman tables" marker (DHT)'
           Top = 0
           Caption = 'DHT'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF6: TToolButton
-          Left = 482
+          Left = 413
           Hint = 'Go to "Start of frame-6" marker (SOF6) - Differential progressive DCT'
           Top = 0
           Caption = 'SOF6'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF7: TToolButton
-          Left = 517
+          Left = 448
           Hint = 'Go to "Start of frame 7" marker (SOF7) - Differential lossless (sequential)'
           Top = 0
           Caption = 'SOF7'
           OnClick = TbGotoMarker
         end
         object TbGotoJPG: TToolButton
-          Left = 552
+          Left = 483
           Hint = 'Go to "JPG extensions" marker (JPG)'
           Top = 0
           Caption = 'JPG'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF9: TToolButton
-          Left = 579
+          Left = 510
           Hint = 'Go to "Start of frame 9" marker -  Extended sequential DCT'
           Top = 0
           Caption = 'SOF9'
         end
         object TbGotoSOF10: TToolButton
-          Left = 614
+          Left = 545
           Hint = 'Go to "Start of frame 10" marker (SOF10) - Progressive DCT'
           Top = 0
           Caption = 'SOF10'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF11: TToolButton
-          Left = 655
+          Left = 586
           Hint = 'Go to "Start of frame 11" marker - Lossless (sequential)'
           Top = 0
           Caption = 'SOF11'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF13: TToolButton
-          Left = 696
+          Left = 627
           Hint = 'Go to "Start of frame 13" marker - Differential sequential DCT'
           Top = 0
           Caption = 'SOF13'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF14: TToolButton
-          Left = 737
+          Left = 668
           Hint = 'Go to "Start of frame 14" marker (SOF14) - Differential progressive DCT'
           Top = 0
           Caption = 'SOF14'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF15: TToolButton
-          Left = 778
+          Left = 709
           Hint = 'Go to "Start of frame 15" marker (SOF15) - Differential lossless (sequential)'
           Top = 0
           Caption = 'SOF15'
           OnClick = TbGotoMarker
         end
         object TbGotoDAC: TToolButton
-          Left = 819
+          Left = 750
           Hint = 'Go to "Definition of arithmetic coding" marker (DAC)'
           Top = 0
           Caption = 'DAC'
           OnClick = TbGotoMarker
         end
         object TbGotoDQT: TToolButton
-          Left = 887
+          Left = 818
           Hint = 'Go to "Definition of quantization tables" (DQT)'
           Top = 0
           Caption = 'DQT'
           OnClick = TbGotoMarker
         end
         object ToolButton3: TToolButton
-          Left = 979
+          Left = 910
           Height = 22
           Top = 0
           Caption = 'ToolButton3'
           Style = tbsSeparator
         end
         object TbNextSegment: TToolButton
-          Left = 987
+          Left = 918
           Hint = 'Go to next segment'
           Top = 0
           Caption = 'Next'
           OnClick = TbNextSegmentClick
         end
         object TbGotoAPP13: TToolButton
-          Left = 149
+          Left = 116
           Top = 0
-          Caption = 'APP13 (IPTC)'
+          Caption = 'APP13'
           DropdownMenu = APP13Popup
           OnClick = TbGotoMarker
           Style = tbsDropDown
@@ -472,12 +472,12 @@ object MainForm: TMainForm
         Height = 543
         Top = 0
         Width = 1132
-        ActivePage = PgDExifThumbTags
+        ActivePage = PgIPTCTags
         Align = alClient
-        TabIndex = 1
+        TabIndex = 3
         TabOrder = 0
         object PgDExifTags: TTabSheet
-          Caption = 'Tags'
+          Caption = 'Exif tags'
           ClientHeight = 515
           ClientWidth = 1124
           object dExif_TagsGrid: TStringGrid
@@ -497,7 +497,7 @@ object MainForm: TMainForm
           end
         end
         object PgDExifThumbTags: TTabSheet
-          Caption = 'ThumbTags'
+          Caption = 'Exif thumbnail tags'
           ClientHeight = 515
           ClientWidth = 1124
           object dExif_ThumbTagsGrid: TStringGrid
@@ -517,14 +517,14 @@ object MainForm: TMainForm
           end
         end
         object PgDExifXML: TTabSheet
-          Caption = 'XML'
-          ClientHeight = 518
-          ClientWidth = 1133
+          Caption = 'Exif XML'
+          ClientHeight = 515
+          ClientWidth = 1124
           inline XML_SynEdit: TSynEdit
             Left = 0
-            Height = 518
+            Height = 515
             Top = 0
-            Width = 1133
+            Width = 1124
             Align = alClient
             Font.Height = -12
             Font.Name = 'Courier New'
@@ -1021,6 +1021,26 @@ object MainForm: TMainForm
                 MouseActionsCollapsed = <>
               end
             end
+          end
+        end
+        object PgIPTCTags: TTabSheet
+          Caption = 'IPTC tags'
+          ClientHeight = 515
+          ClientWidth = 1124
+          object IPTC_TagsGrid: TStringGrid
+            Left = 4
+            Height = 507
+            Top = 4
+            Width = 1116
+            Align = alClient
+            Anchors = []
+            BorderSpacing.Around = 4
+            ColumnClickSorts = True
+            MouseWheelOption = mwGrid
+            Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goThumbTracking, goSmoothScroll, goCellHints, goTruncCellHints, goCellEllipsis]
+            TabOrder = 0
+            OnCompareCells = dExifGridCompareCells
+            OnPrepareCanvas = TagsGridPrepareCanvas
           end
         end
       end
