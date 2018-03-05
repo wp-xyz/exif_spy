@@ -2,10 +2,10 @@ object MainForm: TMainForm
   Left = 336
   Height = 631
   Top = 148
-  Width = 1148
+  Width = 1243
   Caption = 'EXIF spy'
   ClientHeight = 611
-  ClientWidth = 1148
+  ClientWidth = 1243
   Menu = MainMenu
   OnCreate = FormCreate
   OnDeactivate = FormDeactivate
@@ -16,7 +16,7 @@ object MainForm: TMainForm
     Left = 4
     Height = 571
     Top = 36
-    Width = 1140
+    Width = 1235
     ActivePage = PgHex
     Align = alClient
     BorderSpacing.Left = 4
@@ -28,7 +28,7 @@ object MainForm: TMainForm
     object PgHex: TTabSheet
       Caption = 'Hex'
       ClientHeight = 543
-      ClientWidth = 1132
+      ClientWidth = 1227
       object HexEditor: TKHexEditor
         Left = 0
         Height = 478
@@ -55,12 +55,12 @@ object MainForm: TMainForm
         Left = 0
         Height = 20
         Top = 22
-        Width = 1132
+        Width = 1227
         Align = alTop
         AutoSize = True
         BevelOuter = bvNone
         ClientHeight = 20
-        ClientWidth = 1132
+        ClientWidth = 1227
         TabOrder = 1
         object CbHexAddressMode: TCheckBox
           Left = 0
@@ -99,7 +99,7 @@ object MainForm: TMainForm
         Left = 0
         Height = 23
         Top = 520
-        Width = 1132
+        Width = 1227
         Panels = <        
           item
             Width = 250
@@ -116,7 +116,7 @@ object MainForm: TMainForm
         Left = 0
         Height = 22
         Top = 0
-        Width = 1132
+        Width = 1227
         AutoSize = True
         Caption = 'Go to'
         EdgeBorders = []
@@ -334,11 +334,11 @@ object MainForm: TMainForm
         Left = 704
         Height = 478
         Top = 42
-        Width = 428
+        Width = 523
         Align = alClient
         BevelOuter = bvNone
         ClientHeight = 478
-        ClientWidth = 428
+        ClientWidth = 523
         Color = clForm
         ParentColor = False
         TabOrder = 5
@@ -346,7 +346,7 @@ object MainForm: TMainForm
           Left = 0
           Height = 478
           Top = 0
-          Width = 428
+          Width = 523
           ActivePage = PgAnalysis
           Align = alClient
           TabIndex = 0
@@ -354,12 +354,12 @@ object MainForm: TMainForm
           object PgAnalysis: TTabSheet
             Caption = 'Analysis'
             ClientHeight = 450
-            ClientWidth = 420
+            ClientWidth = 515
             object AnalysisGrid: TStringGrid
               Left = 0
               Height = 429
               Top = 21
-              Width = 420
+              Width = 515
               Align = alClient
               ColCount = 4
               FixedCols = 0
@@ -373,7 +373,7 @@ object MainForm: TMainForm
                 91
                 63
                 104
-                223
+                322
               )
               Cells = (
                 4
@@ -395,7 +395,7 @@ object MainForm: TMainForm
               Left = 0
               Height = 17
               Top = 0
-              Width = 420
+              Width = 515
               Align = alTop
               BorderSpacing.Bottom = 4
               Caption = '     '
@@ -1050,7 +1050,7 @@ object MainForm: TMainForm
     Left = 0
     Height = 36
     Top = 0
-    Width = 1148
+    Width = 1243
     AutoSize = True
     ButtonHeight = 36
     ButtonWidth = 36

@@ -228,28 +228,30 @@ uses
   esAbout;
 
 const
-  VALUE_ROW_INDEX         =  1;
-  VALUE_ROW_BITS          =  2;
-  VALUE_ROW_BYTE          =  3;
-  VALUE_ROW_SHORTINT      =  4;
-  VALUE_ROW_WORD          =  5;
-  VALUE_ROW_WORD_BE       =  6;
-  VALUE_ROW_SMALLINT      =  7;
-  VALUE_ROW_SMALLINT_BE   =  8;
-  VALUE_ROW_DWORD         =  9;
-  VALUE_ROW_DWORD_BE      = 10;
-  VALUE_ROW_LONGINT       = 11;
-  VALUE_ROW_LONGINT_BE    = 12;
-  VALUE_ROW_QWORD         = 13;
-  VALUE_ROW_QWORD_BE      = 14;
-  VALUE_ROW_INT64         = 15;
-  VALUE_ROW_INT64_BE      = 16;
-  VALUE_ROW_SINGLE        = 17;
-  VALUE_ROW_DOUBLE        = 18;
-  VALUE_ROW_ANSISTRING    = 19;
-  VALUE_ROW_PANSICHAR     = 20;
-  VALUE_ROW_WIDESTRING    = 21;
-  VALUE_ROW_PWIDECHAR     = 22;
+  ROW_INDEX         =  1;
+  ROW_BITS          =  2;
+  ROW_BYTE          =  3;
+  ROW_SHORTINT      =  4;
+  ROW_WORD          =  5;
+  ROW_WORD_BE       =  6;
+  ROW_SMALLINT      =  7;
+  ROW_SMALLINT_BE   =  8;
+  ROW_DWORD         =  9;
+  ROW_DWORD_BE      = 10;
+  ROW_LONGINT       = 11;
+  ROW_LONGINT_BE    = 12;
+  ROW_QWORD         = 13;
+  ROW_QWORD_BE      = 14;
+  ROW_INT64         = 15;
+  ROW_INT64_BE      = 16;
+  ROW_RATIONAL64    = 17;
+  ROW_RATIONAL64_BE = 18;
+  ROW_SINGLE        = 19;
+  ROW_DOUBLE        = 20;
+  ROW_ANSISTRING    = 21;
+  ROW_PANSICHAR     = 22;
+  ROW_WIDESTRING    = 23;
+  ROW_PWIDECHAR     = 24;
 
   PANEL_OFFSET = 0;
   PANEL_ENDIAN = 1;
@@ -1200,7 +1202,7 @@ begin
   inc(AOffset, 2);
 
   numbytes := 2;
-  if not GetBEIntValue(AOffset, numbytes, val) then exit;
+  if not GetExifIntValue(AOffset, numbytes, val) then exit;
   AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
   AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
   AnalysisGrid.Cells[2, j] := Format('%d ($%.4x)', [val, val]);
@@ -1209,7 +1211,7 @@ begin
   inc(AOffset, numbytes);
 
   numbytes := 4;
-  if not GetBEIntValue(AOffset, numbytes, val) then exit;
+  if not GetExifIntValue(AOffset, numbytes, val) then exit;
   AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
   AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
   AnalysisGrid.Cells[2, j] := Format('%d --> %d', [val, tiffHdr + val]);
@@ -1475,32 +1477,34 @@ begin
 
   with ValueGrid do begin
     ColCount := 3;
-    RowCount := VALUE_ROW_PWIDECHAR + 1;
+    RowCount := ROW_PWIDECHAR + 1;
     Cells[0, 0] := 'Data type';
     Cells[1, 0] := 'Value';
     Cells[2, 0] := 'Offset range (byte count)';
-    Cells[0, VALUE_ROW_INDEX] := 'Offset';
-    Cells[0, VALUE_ROW_BITS] := 'Bits';
-    Cells[0, VALUE_ROW_BYTE] := 'Byte';
-    Cells[0, VALUE_ROW_SHORTINT] := 'ShortInt';
-    Cells[0, VALUE_ROW_WORD] := 'Word';
-    Cells[0, VALUE_ROW_WORD_BE] := 'Word (BE)';
-    Cells[0, VALUE_ROW_SMALLINT] := 'SmallInt';
-    Cells[0, VALUE_ROW_SMALLINT_BE] := 'SmallInt (BE)';
-    Cells[0, VALUE_ROW_DWORD] := 'DWord';
-    Cells[0, VALUE_ROW_DWORD_BE] := 'DWord (BE)';
-    Cells[0, VALUE_ROW_LONGINT] := 'LongInt';
-    Cells[0, VALUE_ROW_LONGINT_BE] := 'LongInt (BE)';
-    Cells[0, VALUE_ROW_QWORD] := 'QWord';
-    Cells[0, VALUE_ROW_QWORD_BE] := 'QWord (BE)';
-    Cells[0, VALUE_ROW_INT64] := 'Int64';
-    Cells[0, VALUE_ROW_INT64_BE] := 'Int64 (BE)';
-    Cells[0, VALUE_ROW_SINGLE] := 'Single';
-    Cells[0, VALUE_ROW_DOUBLE] := 'Double';
-    Cells[0, VALUE_ROW_ANSISTRING] := 'AnsiString';
-    Cells[0, VALUE_ROW_PANSICHAR] := 'PAnsiChar';
-    Cells[0, VALUE_ROW_WIDESTRING] := 'WideString';
-    Cells[0, VALUE_ROW_PWIDECHAR] := 'PWideChar';
+    Cells[0, ROW_INDEX] := 'Offset';
+    Cells[0, ROW_BITS] := 'Bits';
+    Cells[0, ROW_BYTE] := 'Byte';
+    Cells[0, ROW_SHORTINT] := 'ShortInt';
+    Cells[0, ROW_WORD] := 'Word';
+    Cells[0, ROW_WORD_BE] := 'Word (BE)';
+    Cells[0, ROW_SMALLINT] := 'SmallInt';
+    Cells[0, ROW_SMALLINT_BE] := 'SmallInt (BE)';
+    Cells[0, ROW_DWORD] := 'DWord';
+    Cells[0, ROW_DWORD_BE] := 'DWord (BE)';
+    Cells[0, ROW_LONGINT] := 'LongInt';
+    Cells[0, ROW_LONGINT_BE] := 'LongInt (BE)';
+    Cells[0, ROW_QWORD] := 'QWord';
+    Cells[0, ROW_QWORD_BE] := 'QWord (BE)';
+    Cells[0, ROW_INT64] := 'Int64';
+    Cells[0, ROW_INT64_BE] := 'Int64 (BE)';
+    Cells[0, ROW_RATIONAL64] := 'Rational';
+    Cells[0, ROW_RATIONAL64_BE] := 'Rational (BE)';
+    Cells[0, ROW_SINGLE] := 'Single';
+    Cells[0, ROW_DOUBLE] := 'Double';
+    Cells[0, ROW_ANSISTRING] := 'AnsiString';
+    Cells[0, ROW_PANSICHAR] := 'PAnsiChar';
+    Cells[0, ROW_WIDESTRING] := 'WideString';
+    Cells[0, ROW_PWIDECHAR] := 'PWideChar';
     ColWidths[0] := Canvas.TextWidth(' SmallInt (BE) ');
   end;
   CbHexAddressModeChange(nil);
@@ -1722,27 +1726,29 @@ function TMainForm.GetValueGridDataSize: Integer;
 begin
   Result := -1;
   case ValueGrid.Row of
-    VALUE_ROW_BITS       : Result := SizeOf(Byte);
-    VALUE_ROW_BYTE       : Result := SizeOf(Byte);
-    VALUE_ROW_SHORTINT   : Result := SizeOf(ShortInt);
-    VALUE_ROW_WORD,
-    VALUE_ROW_WORD_BE    : Result := SizeOf(Word);
-    VALUE_ROW_SMALLINT,
-    VALUE_ROW_SMALLINT_BE: Result := SizeOf(SmallInt);
-    VALUE_ROW_DWORD,
-    VALUE_ROW_DWORD_BE   : Result := SizeOf(DWord);
-    VALUE_ROW_LONGINT,
-    VALUE_ROW_LONGINT_BE : Result := SizeOf(LongInt);
-    VALUE_ROW_QWORD,
-    VALUE_ROW_QWORD_BE   : Result := SizeOf(QWord);
-    VALUE_ROW_INT64,
-    VALUE_ROW_INT64_BE   : Result := SizeOf(Int64);
-    VALUE_ROW_SINGLE     : Result := SizeOf(Single);
-    VALUE_ROW_DOUBLE     : Result := SizeOf(Double);
-    VALUE_ROW_ANSISTRING,
-    VALUE_ROW_WIDESTRING,
-    VALUE_ROW_PANSICHAR,
-    VALUE_ROW_PWIDECHAR  : Result := ExtractLength(ValueGrid.Cells[2, ValueGrid.Row]);
+    ROW_BITS          : Result := SizeOf(Byte);
+    ROW_BYTE          : Result := SizeOf(Byte);
+    ROW_SHORTINT      : Result := SizeOf(ShortInt);
+    ROW_WORD,
+    ROW_WORD_BE       : Result := SizeOf(Word);
+    ROW_SMALLINT,
+    ROW_SMALLINT_BE   : Result := SizeOf(SmallInt);
+    ROW_DWORD,
+    ROW_DWORD_BE      : Result := SizeOf(DWord);
+    ROW_LONGINT,
+    ROW_LONGINT_BE    : Result := SizeOf(LongInt);
+    ROW_QWORD,
+    ROW_QWORD_BE      : Result := SizeOf(QWord);
+    ROW_INT64,
+    ROW_INT64_BE      : Result := SizeOf(Int64);
+    ROW_RATIONAL64,
+    ROW_RATIONAL64_BE : Result := SizeOf(DWord) * 2;
+    ROW_SINGLE        : Result := SizeOf(Single);
+    ROW_DOUBLE        : Result := SizeOf(Double);
+    ROW_ANSISTRING,
+    ROW_WIDESTRING,
+    ROW_PANSICHAR,
+    ROW_PWIDECHAR     : Result := ExtractLength(ValueGrid.Cells[2, ValueGrid.Row]);
   end;
 end;
 
@@ -2120,6 +2126,8 @@ begin
 end;
 
 procedure TMainForm.Populate_ValueGrid;
+type
+  TRational = record num, denom: DWord; end;
 const
   MAX_LEN = 32;
 var
@@ -2129,6 +2137,7 @@ var
   qw: QWord absolute buf;
   dbl: double absolute buf;
   sng: single absolute buf;
+  rat: TRational absolute buf;
   idx: Integer;
   i, j: Integer;
   s: String;
@@ -2142,111 +2151,126 @@ begin
   i := ValueGrid.RowCount;
   j := ValueGrid.ColCount;
 
-  ValueGrid.Cells[1, VALUE_ROW_INDEX] := IntToStr(idx);
+  ValueGrid.Cells[1, ROW_INDEX] := IntToStr(idx);
 
   // Byte, ShortInt
   if idx <= FBufferSize - SizeOf(byte) then begin
-    ValueGrid.Cells[1, VALUE_ROW_BITS] := IntToBin(FBuffer^[idx], 8);
-    ValueGrid.Cells[2, VALUE_ROW_BITS] := Format('%d ... %d (%d)', [idx, idx, SizeOf(byte)]);
-    ValueGrid.Cells[1, VALUE_ROW_BYTE] := IntToStr(FBuffer^[idx]);
-    ValueGrid.Cells[2, VALUE_ROW_BYTE] := ValueGrid.Cells[2, VALUE_ROW_BITS];
-    ValueGrid.Cells[1, VALUE_ROW_SHORTINT] := IntToStr(ShortInt(FBuffer^[idx]));
-    ValueGrid.Cells[2, VALUE_ROW_SHORTINT] := ValueGrid.Cells[2, VALUE_ROW_BITS];
+    ValueGrid.Cells[1, ROW_BITS] := IntToBin(FBuffer^[idx], 8);
+    ValueGrid.Cells[2, ROW_BITS] := Format('%d ... %d (%d)', [idx, idx, SizeOf(byte)]);
+    ValueGrid.Cells[1, ROW_BYTE] := IntToStr(FBuffer^[idx]);
+    ValueGrid.Cells[2, ROW_BYTE] := ValueGrid.Cells[2, ROW_BITS];
+    ValueGrid.Cells[1, ROW_SHORTINT] := IntToStr(ShortInt(FBuffer^[idx]));
+    ValueGrid.Cells[2, ROW_SHORTINT] := ValueGrid.Cells[2, ROW_BITS];
   end
   else begin
-    ValueGrid.Cells[1, VALUE_ROW_BYTE] := '';
-    ValueGrid.Cells[2, VALUE_ROW_BYTE] := '';
-    ValueGrid.Cells[1, VALUE_ROW_SHORTINT] := '';
-    ValueGrid.Cells[2, VALUE_ROW_SHORTINT] := '';
+    ValueGrid.Cells[1, ROW_BYTE] := '';
+    ValueGrid.Cells[2, ROW_BYTE] := '';
+    ValueGrid.Cells[1, ROW_SHORTINT] := '';
+    ValueGrid.Cells[2, ROW_SHORTINT] := '';
   end;
 
   // Word, SmallInt
   if idx <= FBufferSize - SizeOf(word) then begin
     buf[0] := FBuffer^[idx];
     buf[1] := FBuffer^[idx+1];
-    ValueGrid.Cells[1, VALUE_ROW_WORD] := IntToStr(LEToN(w));
-    ValueGrid.Cells[2, VALUE_ROW_WORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Word)-1, SizeOf(Word)]);
-    ValueGrid.Cells[1, VALUE_ROW_SMALLINT] := IntToStr(SmallInt(LEToN(w)));
-    ValueGrid.Cells[2, VALUE_ROW_SMALLINT] := ValueGrid.Cells[2, VALUE_ROW_WORD];
-    ValueGrid.Cells[1, VALUE_ROW_WORD_BE] := IntToStr(BEToN(w));
-    ValueGrid.Cells[2, VALUE_ROW_WORD_BE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Word)-1, SizeOf(Word)]);
-    ValueGrid.Cells[1, VALUE_ROW_SMALLINT_BE] := IntToStr(SmallInt(BEToN(w)));
-    ValueGrid.Cells[2, VALUE_ROW_SMALLINT_BE] := ValueGrid.Cells[2, VALUE_ROW_WORD];
+    ValueGrid.Cells[1, ROW_WORD] := IntToStr(LEToN(w));
+    ValueGrid.Cells[2, ROW_WORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Word)-1, SizeOf(Word)]);
+    ValueGrid.Cells[1, ROW_SMALLINT] := IntToStr(SmallInt(LEToN(w)));
+    ValueGrid.Cells[2, ROW_SMALLINT] := ValueGrid.Cells[2, ROW_WORD];
+    ValueGrid.Cells[1, ROW_WORD_BE] := IntToStr(BEToN(w));
+    ValueGrid.Cells[2, ROW_WORD_BE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Word)-1, SizeOf(Word)]);
+    ValueGrid.Cells[1, ROW_SMALLINT_BE] := IntToStr(SmallInt(BEToN(w)));
+    ValueGrid.Cells[2, ROW_SMALLINT_BE] := ValueGrid.Cells[2, ROW_WORD];
   end else begin
-    ValueGrid.Cells[1, VALUE_ROW_WORD] := '';
-    ValueGrid.Cells[2, VALUE_ROW_WORD] := '';
-    ValueGrid.Cells[1, VALUE_ROW_SMALLINT] := '';
-    ValueGrid.Cells[2, VALUE_ROW_SMALLINT] := '';
-    ValueGrid.Cells[1, VALUE_ROW_WORD_BE] := '';
-    ValueGrid.Cells[2, VALUE_ROW_WORD_BE] := '';
-    ValueGrid.Cells[1, VALUE_ROW_SMALLINT_BE] := '';
-    ValueGrid.Cells[2, VALUE_ROW_SMALLINT_BE] := '';
+    ValueGrid.Cells[1, ROW_WORD] := '';
+    ValueGrid.Cells[2, ROW_WORD] := '';
+    ValueGrid.Cells[1, ROW_SMALLINT] := '';
+    ValueGrid.Cells[2, ROW_SMALLINT] := '';
+    ValueGrid.Cells[1, ROW_WORD_BE] := '';
+    ValueGrid.Cells[2, ROW_WORD_BE] := '';
+    ValueGrid.Cells[1, ROW_SMALLINT_BE] := '';
+    ValueGrid.Cells[2, ROW_SMALLINT_BE] := '';
   end;
 
   // DWord, LongInt
   if idx <= FBufferSize - SizeOf(DWord) then begin
     for i:=0 to SizeOf(DWord)-1 do buf[i] :=
       FBuffer^[idx+i];
-    ValueGrid.Cells[1, VALUE_ROW_DWORD] := IntToStr(LEToN(dw));
-    ValueGrid.Cells[2, VALUE_ROW_DWORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(DWord)-1, SizeOf(DWord)]);
-    ValueGrid.Cells[1, VALUE_ROW_LONGINT] := IntToStr(LongInt(LEToN(dw)));
-    ValueGrid.Cells[2, VALUE_ROW_LONGINT] := ValueGrid.Cells[2, VALUE_ROW_DWORD];
-    ValueGrid.Cells[1, VALUE_ROW_DWORD_BE] := IntToStr(BEToN(dw));
-    ValueGrid.Cells[2, VALUE_ROW_DWORD_BE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(DWord)-1, Sizeof(DWord)]);
-    ValueGrid.Cells[1, VALUE_ROW_LONGINT_BE] := IntToStr(LongInt(BEToN(dw)));
-    ValueGrid.Cells[2, VALUE_ROW_LONGINT_BE] := ValueGrid.Cells[2, VALUE_ROW_DWORD];
+    ValueGrid.Cells[1, ROW_DWORD] := IntToStr(LEToN(dw));
+    ValueGrid.Cells[2, ROW_DWORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(DWord)-1, SizeOf(DWord)]);
+    ValueGrid.Cells[1, ROW_LONGINT] := IntToStr(LongInt(LEToN(dw)));
+    ValueGrid.Cells[2, ROW_LONGINT] := ValueGrid.Cells[2, ROW_DWORD];
+    ValueGrid.Cells[1, ROW_DWORD_BE] := IntToStr(BEToN(dw));
+    ValueGrid.Cells[2, ROW_DWORD_BE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(DWord)-1, Sizeof(DWord)]);
+    ValueGrid.Cells[1, ROW_LONGINT_BE] := IntToStr(LongInt(BEToN(dw)));
+    ValueGrid.Cells[2, ROW_LONGINT_BE] := ValueGrid.Cells[2, ROW_DWORD];
   end else begin
-    ValueGrid.Cells[1, VALUE_ROW_DWORD] := '';
-    ValueGrid.Cells[2, VALUE_ROW_DWORD] := '';
-    ValueGrid.Cells[1, VALUE_ROW_LONGINT] := '';
-    ValueGrid.Cells[2, VALUE_ROW_LONGINT] := '';
-    ValueGrid.Cells[1, VALUE_ROW_DWORD_BE] := '';
-    ValueGrid.Cells[2, VALUE_ROW_DWORD_BE] := '';
-    ValueGrid.Cells[1, VALUE_ROW_LONGINT_BE] := '';
-    ValueGrid.Cells[2, VALUE_ROW_LONGINT_BE] := '';
+    ValueGrid.Cells[1, ROW_DWORD] := '';
+    ValueGrid.Cells[2, ROW_DWORD] := '';
+    ValueGrid.Cells[1, ROW_LONGINT] := '';
+    ValueGrid.Cells[2, ROW_LONGINT] := '';
+    ValueGrid.Cells[1, ROW_DWORD_BE] := '';
+    ValueGrid.Cells[2, ROW_DWORD_BE] := '';
+    ValueGrid.Cells[1, ROW_LONGINT_BE] := '';
+    ValueGrid.Cells[2, ROW_LONGINT_BE] := '';
+  end;
+
+  // Rational
+  if idx <= FBufferSize - SizeOf(TRational) then begin
+    for i:=0 to SizeOf(TRational) do
+      buf[i] := FBuffer^[idx+i];
+    ValueGrid.Cells[1, ROW_RATIONAL64] := Format('%d/%d', [rat.num, rat.denom]);
+    ValueGrid.Cells[2, ROW_RATIONAL64] := Format('%d ... %d (%d)', [idx, idx + Sizeof(TRational)-1, SizeOf(TRational)]);
+    ValueGrid.Cells[1, ROW_RATIONAL64_BE] := Format('%d/%d', [BEtoN(rat.num), BEtoN(rat.denom)]);
+    ValueGrid.Cells[2, ROW_RATIONAL64_BE] := Format('%d ... %d (%d)', [idx, idx + Sizeof(TRational)-1, SizeOf(TRational)]);
+  end else begin
+    ValueGrid.Cells[1, ROW_RATIONAL64] := '';
+    ValueGrid.Cells[2, ROW_RATIONAL64] := '';
+    ValueGrid.Cells[1, ROW_RATIONAL64_BE] := '';
+    ValueGrid.Cells[2, ROW_RATIONAL64_BE] := '';
   end;
 
   // QWord, Int64
   if idx <= FBufferSize - SizeOf(QWord) then begin
     for i:=0 to SizeOf(QWord)-1 do
       buf[i] := FBuffer^[idx+i];
-    ValueGrid.Cells[1, VALUE_ROW_QWORD] := Format('%d', [qw]);
-    ValueGrid.Cells[2, VALUE_ROW_QWORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(QWord)-1, SizeOf(QWord)]);
-    ValueGrid.Cells[1, VALUE_ROW_INT64] := Format('%d', [Int64(qw)]);
-    ValueGrid.Cells[2, VALUE_ROW_INT64] := ValueGrid.Cells[2, VALUE_ROW_QWORD];
-    ValueGrid.Cells[1, VALUE_ROW_QWORD_BE] := Format('%d', [BEToN(qw)]);
-    ValueGrid.Cells[2, VALUE_ROW_QWORD_BE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(QWord)-1, SizeOf(QWord)]);
-    ValueGrid.Cells[1, VALUE_ROW_INT64_BE] := Format('%d', [Int64(BEToN(qw))]);
-    ValueGrid.Cells[2, VALUE_ROW_INT64_BE] := ValueGrid.Cells[2, VALUE_ROW_QWORD];
+    ValueGrid.Cells[1, ROW_QWORD] := Format('%d', [qw]);
+    ValueGrid.Cells[2, ROW_QWORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(QWord)-1, SizeOf(QWord)]);
+    ValueGrid.Cells[1, ROW_INT64] := Format('%d', [Int64(qw)]);
+    ValueGrid.Cells[2, ROW_INT64] := ValueGrid.Cells[2, ROW_QWORD];
+    ValueGrid.Cells[1, ROW_QWORD_BE] := Format('%d', [BEToN(qw)]);
+    ValueGrid.Cells[2, ROW_QWORD_BE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(QWord)-1, SizeOf(QWord)]);
+    ValueGrid.Cells[1, ROW_INT64_BE] := Format('%d', [Int64(BEToN(qw))]);
+    ValueGrid.Cells[2, ROW_INT64_BE] := ValueGrid.Cells[2, ROW_QWORD];
   end else begin
-    ValueGrid.Cells[1, VALUE_ROW_QWORD] := '';
-    ValueGrid.Cells[2, VALUE_ROW_QWORD] := '';
-    ValueGrid.Cells[1, VALUE_ROW_INT64] := '';
-    ValueGrid.Cells[2, VALUE_ROW_INT64] := '';
-    ValueGrid.Cells[1, VALUE_ROW_QWORD_BE] := '';
-    ValueGrid.Cells[2, VALUE_ROW_QWORD_BE] := '';
-    ValueGrid.Cells[1, VALUE_ROW_INT64_BE] := '';
-    ValueGrid.Cells[2, VALUE_ROW_INT64_BE] := '';
+    ValueGrid.Cells[1, ROW_QWORD] := '';
+    ValueGrid.Cells[2, ROW_QWORD] := '';
+    ValueGrid.Cells[1, ROW_INT64] := '';
+    ValueGrid.Cells[2, ROW_INT64] := '';
+    ValueGrid.Cells[1, ROW_QWORD_BE] := '';
+    ValueGrid.Cells[2, ROW_QWORD_BE] := '';
+    ValueGrid.Cells[1, ROW_INT64_BE] := '';
+    ValueGrid.Cells[2, ROW_INT64_BE] := '';
   end;
 
   // Single
   if idx <= FBufferSize - SizeOf(single) then begin
     for i:=0 to SizeOf(single)-1 do buf[i] := FBuffer^[idx+i];
-    ValueGrid.Cells[1, VALUE_ROW_SINGLE] := Format('%f', [sng]);
-    ValueGrid.Cells[2, VALUE_ROW_SINGLE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Single)-1, SizeOf(Single)]);
+    ValueGrid.Cells[1, ROW_SINGLE] := Format('%f', [sng]);
+    ValueGrid.Cells[2, ROW_SINGLE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Single)-1, SizeOf(Single)]);
   end else begin
-    ValueGrid.Cells[1, VALUE_ROW_SINGLE] := '';
-    ValueGrid.Cells[2, VALUE_ROW_SINGLE] := '';
+    ValueGrid.Cells[1, ROW_SINGLE] := '';
+    ValueGrid.Cells[2, ROW_SINGLE] := '';
   end;
 
   // Double
   if idx <= FBufferSize - SizeOf(double) then begin
     for i:=0 to SizeOf(double)-1 do buf[i] := FBuffer^[idx+i];
-    ValueGrid.Cells[1, VALUE_ROW_DOUBLE] := Format('%f', [dbl]);
-    ValueGrid.Cells[2, VALUE_ROW_DOUBLE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Double)-1, SizeOf(Double)]);
+    ValueGrid.Cells[1, ROW_DOUBLE] := Format('%f', [dbl]);
+    ValueGrid.Cells[2, ROW_DOUBLE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Double)-1, SizeOf(Double)]);
   end else begin
-    ValueGrid.Cells[1, VALUE_ROW_DOUBLE] := '';
-    ValueGrid.Cells[2, VALUE_ROW_DOUBLE] := '';
+    ValueGrid.Cells[1, ROW_DOUBLE] := '';
+    ValueGrid.Cells[2, ROW_DOUBLE] := '';
   end;
 
   // AnsiString
@@ -2261,11 +2285,11 @@ begin
       inc(i);
     end;
     SetLength(s, j);
-    ValueGrid.Cells[1, VALUE_ROW_ANSISTRING] := s;
-    ValueGrid.Cells[2, VALUE_ROW_ANSISTRING] := Format('%d ... %d (%d)', [idx, idx + ls * SizeOf(char), ls * SizeOf(char) + 1]);
+    ValueGrid.Cells[1, ROW_ANSISTRING] := s;
+    ValueGrid.Cells[2, ROW_ANSISTRING] := Format('%d ... %d (%d)', [idx, idx + ls * SizeOf(char), ls * SizeOf(char) + 1]);
   end else begin
-    ValueGrid.Cells[1, VALUE_ROW_ANSISTRING] := '';
-    ValueGrid.Cells[2, VALUE_ROW_ANSISTRING] := '';
+    ValueGrid.Cells[1, ROW_ANSISTRING] := '';
+    ValueGrid.Cells[2, ROW_ANSISTRING] := '';
   end;
 
   // PAnsiChar
@@ -2281,12 +2305,11 @@ begin
     SetLength(s, ls);
     if ls = MAX_LEN then s := s + '...';
     Move(FBuffer^[idx], s[1], ls);
-    ValueGrid.Cells[1, VALUE_ROW_PANSICHAR] := s;
-    ValueGrid.Cells[2, VALUE_ROW_PANSICHAR] := Format('%d ... %d (%d)', [idx, idx + ls - 1, ls]);
-  end else
-  begin
-    ValueGrid.Cells[1, VALUE_ROW_PANSICHAR] := '';
-    ValueGrid.Cells[2, VALUE_ROW_PANSICHAR] := '';
+    ValueGrid.Cells[1, ROW_PANSICHAR] := s;
+    ValueGrid.Cells[2, ROW_PANSICHAR] := Format('%d ... %d (%d)', [idx, idx + ls - 1, ls]);
+  end else begin
+    ValueGrid.Cells[1, ROW_PANSICHAR] := '';
+    ValueGrid.Cells[2, ROW_PANSICHAR] := '';
   end;
 
   // WideString
@@ -2304,11 +2327,11 @@ begin
       sw[j] := WideChar(w);
     end;
     SetLength(sw, j);
-    ValueGrid.Cells[1, VALUE_ROW_WIDESTRING] := UTF8Encode(sw);
-    ValueGrid.Cells[2, VALUE_ROW_WIDESTRING] := Format('%d ... %d (%d)', [idx, idx + (ls+1)*SizeOf(wideChar) -1, (ls+1)*SizeOf(WideChar)]);
+    ValueGrid.Cells[1, ROW_WIDESTRING] := UTF8Encode(sw);
+    ValueGrid.Cells[2, ROW_WIDESTRING] := Format('%d ... %d (%d)', [idx, idx + (ls+1)*SizeOf(wideChar) -1, (ls+1)*SizeOf(WideChar)]);
   end else begin
-    ValueGrid.Cells[1, VALUE_ROW_WIDESTRING] := '';
-    ValueGrid.Cells[2, VALUE_ROW_WIDESTRING] := '';
+    ValueGrid.Cells[1, ROW_WIDESTRING] := '';
+    ValueGrid.Cells[2, ROW_WIDESTRING] := '';
   end;
 
   // PWideChar
@@ -2323,12 +2346,11 @@ begin
     end;
     s := {%H-}WideCharLenToString(PWideChar(@FBuffer^[idx]), ls);
     if ls = MAX_LEN then s := s + '...';
-    ValueGrid.Cells[1, VALUE_ROW_PWIDECHAR] := s;
-    ValueGrid.Cells[2, VALUE_ROW_PWIDECHAR] := Format('%d ... %d', [idx, idx + ls * SizeOf(widechar) - 1, ls * Sizeof(widechar)]);
-  end else
-  begin
-    ValueGrid.Cells[1, VALUE_ROW_PWIDECHAR] := '';
-    ValueGrid.Cells[2, VALUE_ROW_PWIDECHAR] := '';
+    ValueGrid.Cells[1, ROW_PWIDECHAR] := s;
+    ValueGrid.Cells[2, ROW_PWIDECHAR] := Format('%d ... %d', [idx, idx + ls * SizeOf(widechar) - 1, ls * Sizeof(widechar)]);
+  end else begin
+    ValueGrid.Cells[1, ROW_PWIDECHAR] := '';
+    ValueGrid.Cells[2, ROW_PWIDECHAR] := '';
   end;
 end;
 
