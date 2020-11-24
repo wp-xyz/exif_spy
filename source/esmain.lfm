@@ -17,12 +17,12 @@ object MainForm: TMainForm
     Height = 571
     Top = 36
     Width = 1235
-    ActivePage = fpExifPage
+    ActivePage = PgHex
     Align = alClient
     BorderSpacing.Left = 4
     BorderSpacing.Right = 4
     BorderSpacing.Bottom = 4
-    TabIndex = 2
+    TabIndex = 0
     TabOrder = 0
     OnChange = MainPageControlChange
     object PgHex: TTabSheet
@@ -109,7 +109,7 @@ object MainForm: TMainForm
           OnClick = TbGotoMarker
         end
         object TbGotoSOF0: TToolButton
-          Left = 206
+          Left = 218
           Hint = 'Go to "Start-of-frane" marker 0 (SOF0) / Baseline DCT'
           Top = 0
           Caption = 'SOF0'
@@ -137,24 +137,26 @@ object MainForm: TMainForm
           Hint = 'Go to "Application marker 2" (APP2)'
           Top = 0
           Caption = 'APP2'
+          DropdownMenu = App2Popup
           OnClick = TbGotoMarker
+          Style = tbsDropDown
         end
         object TbGotoEOI: TToolButton
-          Left = 882
+          Left = 894
           Hint = 'Go to "End-of-image" marker (EOI)'
           Top = 0
           Caption = 'EOI'
           OnClick = TbGotoMarker
         end
         object TbGotoCOM: TToolButton
-          Left = 781
+          Left = 793
           Hint = 'Go to "Comment" marker (COM)'
           Top = 0
           Caption = 'COM'
           OnClick = TbGotoMarker
         end
         object TbGotoSOS: TToolButton
-          Left = 848
+          Left = 860
           Hint = 'Go to "Start-of-scan" marker (SOS)'
           Top = 0
           Caption = 'SOS'
@@ -168,132 +170,132 @@ object MainForm: TMainForm
           Style = tbsDivider
         end
         object ToolButton1: TToolButton
-          Left = 877
+          Left = 889
           Height = 22
           Top = 0
           Caption = 'ToolButton1'
           Style = tbsDivider
         end
         object TbGotoSOF1: TToolButton
-          Left = 241
+          Left = 253
           Hint = 'Go to "Start-of-frane" marker 0 (SOF0) / Extended sequential DCT'
           Top = 0
           Caption = 'SOF1'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF2: TToolButton
-          Left = 276
+          Left = 288
           Hint = 'Go to "Start-of-frame 2" marker (SOF2) - Progressive DCT'
           Top = 0
           Caption = 'SOF2'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF3: TToolButton
-          Left = 311
+          Left = 323
           Hint = 'Go to to "Start-of-frame-3" marker (SOF3) - Lossless (sequential)'
           Top = 0
           Caption = 'SOF3'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF5: TToolButton
-          Left = 377
+          Left = 389
           Hint = 'Go to "Start of frame 5" marker (SOF5) - Differential sequential DCT'
           Top = 0
           Caption = 'SOF5'
           OnClick = TbGotoMarker
         end
         object TbGotoDHT: TToolButton
-          Left = 346
+          Left = 358
           Hint = 'Go to "Definition of Huffman tables" marker (DHT)'
           Top = 0
           Caption = 'DHT'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF6: TToolButton
-          Left = 412
+          Left = 424
           Hint = 'Go to "Start of frame-6" marker (SOF6) - Differential progressive DCT'
           Top = 0
           Caption = 'SOF6'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF7: TToolButton
-          Left = 447
+          Left = 459
           Hint = 'Go to "Start of frame 7" marker (SOF7) - Differential lossless (sequential)'
           Top = 0
           Caption = 'SOF7'
           OnClick = TbGotoMarker
         end
         object TbGotoJPG: TToolButton
-          Left = 482
+          Left = 494
           Hint = 'Go to "JPG extensions" marker (JPG)'
           Top = 0
           Caption = 'JPG'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF9: TToolButton
-          Left = 509
+          Left = 521
           Hint = 'Go to "Start of frame 9" marker -  Extended sequential DCT'
           Top = 0
           Caption = 'SOF9'
         end
         object TbGotoSOF10: TToolButton
-          Left = 544
+          Left = 556
           Hint = 'Go to "Start of frame 10" marker (SOF10) - Progressive DCT'
           Top = 0
           Caption = 'SOF10'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF11: TToolButton
-          Left = 585
+          Left = 597
           Hint = 'Go to "Start of frame 11" marker - Lossless (sequential)'
           Top = 0
           Caption = 'SOF11'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF13: TToolButton
-          Left = 626
+          Left = 638
           Hint = 'Go to "Start of frame 13" marker - Differential sequential DCT'
           Top = 0
           Caption = 'SOF13'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF14: TToolButton
-          Left = 667
+          Left = 679
           Hint = 'Go to "Start of frame 14" marker (SOF14) - Differential progressive DCT'
           Top = 0
           Caption = 'SOF14'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF15: TToolButton
-          Left = 708
+          Left = 720
           Hint = 'Go to "Start of frame 15" marker (SOF15) - Differential lossless (sequential)'
           Top = 0
           Caption = 'SOF15'
           OnClick = TbGotoMarker
         end
         object TbGotoDAC: TToolButton
-          Left = 749
+          Left = 761
           Hint = 'Go to "Definition of arithmetic coding" marker (DAC)'
           Top = 0
           Caption = 'DAC'
           OnClick = TbGotoMarker
         end
         object TbGotoDQT: TToolButton
-          Left = 817
+          Left = 829
           Hint = 'Go to "Definition of quantization tables" (DQT)'
           Top = 0
           Caption = 'DQT'
           OnClick = TbGotoMarker
         end
         object ToolButton3: TToolButton
-          Left = 908
+          Left = 920
           Height = 22
           Top = 0
           Caption = 'ToolButton3'
           Style = tbsSeparator
         end
         object TbNextSegment: TToolButton
-          Left = 916
+          Left = 928
           Hint = 'Go to next segment'
           Top = 0
           Caption = 'Next'
@@ -385,13 +387,13 @@ object MainForm: TMainForm
           end
           object PgConverter: TTabSheet
             Caption = 'Converter'
-            ClientHeight = 461
-            ClientWidth = 420
+            ClientHeight = 450
+            ClientWidth = 1214
             object ValueGrid: TStringGrid
               Left = 0
-              Height = 461
+              Height = 450
               Top = 0
-              Width = 420
+              Width = 1214
               Align = alClient
               AutoFillColumns = True
               ColCount = 3
@@ -400,8 +402,8 @@ object MainForm: TMainForm
               OnClick = ValueGridClick
               ColWidths = (
                 64
-                167
-                168
+                573
+                573
               )
             end
           end
@@ -640,17 +642,22 @@ object MainForm: TMainForm
       ImageIndex = 3
       OnExecute = AcHelpAboutExecute
     end
-    object AcCfgUseDExif: TAction
+    object AcCfgUseFPExif: TAction
       Category = 'Configuration'
       AutoCheck = True
-      Caption = 'Load dExif data'
+      Caption = 'Load fpExif analysis'
       Checked = True
-      OnExecute = AcCfgUseDExifExecute
+      OnExecute = AcCfgUseFPExifExecute
     end
     object AcGotoIPTC: TAction
       Category = 'HexNavigation'
-      Caption = 'AcGotoIPTC'
+      Caption = 'Go to IPTC'
       OnExecute = AcGotoIPTCExecute
+    end
+    object AcGotoICCProfile: TAction
+      Category = 'HexNavigation'
+      Caption = 'Go to ICC Color Profile'
+      OnExecute = AcGotoICCProfileExecute
     end
   end
   object APP1Popup: TPopupMenu
@@ -714,7 +721,7 @@ object MainForm: TMainForm
     object MnuCfg: TMenuItem
       Caption = 'Configuration'
       object MnuCfgUseDExif: TMenuItem
-        Action = AcCfgUseDExif
+        Action = AcCfgUseFPExif
         AutoCheck = True
       end
     end
@@ -1441,6 +1448,13 @@ object MainForm: TMainForm
     object MnuIPTC: TMenuItem
       Action = AcGotoIPTC
       Caption = 'IPTC-NAA record'
+    end
+  end
+  object App2Popup: TPopupMenu
+    Left = 768
+    Top = 192
+    object MenuItem1: TMenuItem
+      Action = AcGotoICCProfile
     end
   end
 end

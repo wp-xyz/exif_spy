@@ -30,8 +30,9 @@ type
     AcFileQuit: TAction;
     AcFileReload: TAction;
     AcHelpAbout: TAction;
-    AcCfgUseDExif: TAction;
+    AcCfgUseFPExif: TAction;
     AcGotoIPTC: TAction;
+    AcGotoICCProfile: TAction;
     ActionList: TActionList;
     cbHexAddressMode: TCheckBox;
     cbHexSingleBytes: TCheckBox;
@@ -42,6 +43,7 @@ type
     Images24: TImageList;
     MainMenu: TMainMenu;
     MainPageControl: TPageControl;
+    MenuItem1: TMenuItem;
     MnuIPTC: TMenuItem;
     MnuCfgUseDExif: TMenuItem;
     MnuCfg: TMenuItem;
@@ -71,6 +73,7 @@ type
     PgHex: TTabSheet;
     APP1Popup: TPopupMenu;
     APP13Popup: TPopupMenu;
+    App2Popup: TPopupMenu;
     RecentFilesPopup: TPopupMenu;
     ScrollBox: TScrollBox;
     HexSplitter: TSplitter;
@@ -123,10 +126,11 @@ type
     ToolButton1: TToolButton;
     ToolButton2: TToolButton;
     ValueGrid: TStringGrid;
-    procedure AcCfgUseDExifExecute(Sender: TObject);
+    procedure AcCfgUseFPExifExecute(Sender: TObject);
     procedure AcFileOpenExecute(Sender: TObject);
     procedure AcFileQuitExecute(Sender: TObject);
     procedure AcFileReloadExecute(Sender: TObject);
+    procedure AcGotoICCProfileExecute(Sender: TObject);
     procedure AcGotoIPTCExecute(Sender: TObject);
     procedure AcHelpAboutExecute(Sender: TObject);
     procedure AcImgFitExecute(Sender: TObject);
@@ -165,10 +169,10 @@ type
     FCurrIFDIndex: Integer;
     FMRUMenuManager : TMRUMenuManager;
     FHexEditor: TMPHexEditor;
-    FLoadDExif: Boolean;
     FLoadFPExif: Boolean;
     procedure DisableAllBtns;
     function DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
+    function DisplayColorProfile(AOffset: Int64): Boolean;
     function DisplayGenericMarker(AOffset: Int64): Boolean;
     function DisplayMarker(AOffset: Int64): Boolean;
     function DisplayMarkerAPP0(AOffset: Int64): Boolean;
@@ -193,6 +197,7 @@ type
     function GetMarkerName(AMarker: Byte; Long: Boolean): String;
     function GetValueGridDataSize: Integer;
     function GotoAdobeImageResource(AResourceID: Word; var AOffset: Int64): Boolean;
+    function GotoColorProfile(ASignature: String; var AOffset: Int64): Boolean;
     function GotoNextIFD(var AOffset: Int64): Boolean;
     procedure GotoOffset(AOffset: Int64);
     function GotoSubIFD(ATag: Word; var AOffset: Int64; ATiffHeaderOffset: Int64): Boolean;
@@ -331,9 +336,9 @@ end;
 
 { TMainForm }
 
-procedure TMainForm.AcCfgUseDExifExecute(Sender: TObject);
+procedure TMainForm.AcCfgUseFPExifExecute(Sender: TObject);
 begin
-  FLoadDExif := AcCfgUseDExif.Checked;
+  FLoadFPExif := AcCfgUseFPExif.Checked;
 end;
 
 procedure TMainForm.AcFileOpenExecute(Sender: TObject);
@@ -351,6 +356,20 @@ procedure TMainForm.AcFileReloadExecute(Sender: TObject);
 begin
   if FFilename <> '' then
     LoadFile(FFileName);
+end;
+
+procedure TMainForm.AcGotoICCProfileExecute(Sender: TObject);
+var
+  offs: Int64;
+begin
+  offs := FindMarker(MARKER_APP2);
+  if offs = -1 then
+    exit;
+  if GotoColorProfile('ICC_PROFILE', offs) then
+  begin
+    GotoOffset(offs);
+    DisplayColorProfile(offs);
+  end;
 end;
 
 procedure TMainForm.AcGotoIPTCExecute(Sender: TObject);
@@ -472,7 +491,7 @@ var
 begin
   Result := false;
 
-  AnalysisInfo.Caption := 'Adobe image resource)';
+  AnalysisInfo.Caption := 'Adobe image resource';
   AnalysisGrid.RowCount := 5 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -625,9 +644,273 @@ begin
     numbytes := 1;
     val := FBuffer^[AOffset];
   end;
-
-
 end;
+
+function S15Fixed16NumberToStr(n: DWord): String;
+type
+  TS15Fixed16 = record
+    IntPart: SmallInt;
+    FracPart: Word;
+  end;
+var
+  d: Double;
+begin
+  with TS15Fixed16(n) do
+    d := BEToN(IntPart) + BEToN(FracPart) / word($FFFF);
+  Result := FormatFloat('0.00000', d);
+end;
+
+function TMainForm. DisplayColorProfile(AOffset: Int64): Boolean;
+type
+  TICCDateTime = record
+    Year, Month, Day, Hour, Minute, Second: Word;
+  end;
+var
+  numBytes: Integer;
+  i, j: Integer;
+  val: Int64;
+  s: String;
+  dt: TICCDateTime;
+  dw: DWord;
+  b16: array[0..15] of byte;
+begin
+  Result := false;
+
+  AnalysisInfo.Caption := 'ICC Color Profile';
+  AnalysisGrid.RowCount := AnalysisGrid.FixedRows + 1000;
+  j := AnalysisGrid.Fixedrows;
+
+  numBytes := 4;
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := Format('%d ($%.4x)', [val, val]);
+  AnalysisGrid.Cells[3, j] := 'Profile size';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  SetLength(s, numbytes);
+  Move(FBuffer^[AOffset], s[1], numBytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Preferred Colour Management Module type';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  SetLength(s, numbytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  s := Format('%d.%d', [ord(s[1]), ord(s[2])]);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Profile version and sub-version number';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  SetLength(s, numBytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  case s of
+    'scnr': s := s + ' (scanners, digital cameras)';
+    'mntr': s := s + ' (CRTs, LCDs)';
+    'prtr': s := s + ' (printers)'
+  end;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Profile/device class';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  SetLength(s, numBytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Color space of data';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  SetLength(s, numBytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Profile connection space';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 12;
+  Move(FBuffer^[AOffset], dt, SizeOf(dt));
+  s := DateToStr(EncodeDate(BEToN(dt.Year), BEToN(dt.Month), BEToN(dt.Day))) + ' ' +
+    TimeToStr(EncodeTime(BEToN(dt.Hour), BEToN(dt.Minute), BEToN(dt.Second), 0));
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Date and time this profile was first created';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  SetLength(s, numBytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;;
+  AnalysisGrid.Cells[3, j] := 'Profile file signature';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  SetLength(s, numBytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  case s of
+    'APPL': s := s + ' (Apple Computer, Inc.)';
+    'MSFT': s := s + ' (Microsoft Corporation)';
+    'SGI ': s := s + ' (Silicon Graphics, Inc.)';
+    'SUNW': s := s + ' (Sun Microsystems, Inc.)';
+    'TGNT': s := s + ' (Taligent, Inc.)';
+  end;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;;
+  AnalysisGrid.Cells[3, j] := 'Primary platform target for the profile';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := Format('%d ($%.4x)', [val, val]);
+  AnalysisGrid.Cells[3, j] := 'Profile flags';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  SetLength(s, numBytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Device manufacturer';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  s := Format('%d ($%.4x)', [val, val]);
+  if val = 0 then s := s + '; not used';
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Device model';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;       // field size is 8, but GetBEIntValue does not handle this
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  s := Format('%d ($%.4x)', [val, val]);
+  s := s + '; ' + IfThen(val and $01 = 0, 'reflective', 'transparency');
+  s := s + '; ' + IfThen(val and $02 = 0, 'glossy', 'matte');
+  s := s + '; ' + IfThen(val and $04 = 0, 'positive', 'negative') + ' media polarity';
+  s := s + '; ' + IfThen(val and $08 = 0, 'colour', 'b/w') + ' media';
+  s := s + '; ' + IfThen(val and $10 = 0, 'paper/paperboard', 'non-paper-based');
+  s := s + '; ' + IfThen(val and $20 = 0, 'non-textured', 'textured');
+  s := s + '; ' + IfThen(val and $40 = 0, 'isotropic', 'non-isotropic');
+  s := s + '; ' + IfThen(val and $80 = 0, 'non self-luminous', 'self-luminous');
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Device attributes';
+  inc(j);
+  inc(AOffset, numBytes+4);  // +4 for the missing bytes of the field size
+
+  numBytes := 4;
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  s := Format('%d ($%.4x)', [val, val]);
+  case val of
+    0: s := s + ': Perpetual';
+    1: s := s + ': Media-relative colorimetric';
+    2: s := s + ': Saturation';
+    3: s := s + ': ICC-absolute colorimetric';
+  end;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Rendering intent';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  Move(FBuffer^[AOffset], dw, numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := S15Fixed16NumberToStr(dw);
+  AnalysisGrid.Cells[3, j] := 'X of nCIEXYZ values of the PCS illuminant, computed with the PCS observer';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  Move(FBuffer^[AOffset], dw, numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := S15Fixed16NumberToStr(dw);
+  AnalysisGrid.Cells[3, j] := 'Y of nCIEXYZ values of the PCS illuminant, computed with the PCS observer';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  Move(FBuffer^[AOffset], dw, numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := S15Fixed16NumberToStr(dw);
+  AnalysisGrid.Cells[3, j] := 'Z of nCIEXYZ values of the PCS illuminant, computed with the PCS observer';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  SetLength(s, numBytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := s;
+  AnalysisGrid.Cells[3, j] := 'Profile creator signature';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 44;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := '(reserved)';
+  AnalysisGrid.Cells[3, j] := 'reserved';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  if not GetBEIntValue(AOffset, numbytes, val) then
+    exit;
+  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, j] := IntToStr(val);
+  AnalysisGrid.Cells[3, j] := 'Tag count';
+  inc(j);
+  inc(AOffset, numBytes);
+
+  AnalysisGrid.RowCount := j;
+  Result := true;
+end;
+
 
 function TMainForm.DisplayGenericMarker(AOffset: Int64): Boolean;
 var
@@ -1424,7 +1707,6 @@ var
   i: Integer;
 begin
   FCurrOffset := -1;
-  FLoadDExif := true;
   FLoadFPExif := true;
 
   TbGotoSOI.Tag := MARKER_SOI;
@@ -1826,6 +2108,35 @@ begin
   AOffset := i;
   Result := true;
 end;
+
+function TMainForm.GotoColorProfile(ASignature: String; var AOffset: Int64): Boolean;
+var
+  hdr: AnsiString = '';
+  seq: AnsiString = '';
+begin
+  Result := false;
+  inc(AOffset, 4);
+
+  // Check header "ICC_PROFILE"
+  SetLength(hdr, Length(ASignature));
+  Move(FBuffer^[AOffset], hdr[1], Length(hdr));
+  if hdr <> ASignature then
+    exit;
+  inc(AOffset, Length(hdr));
+
+  // Check sequence number
+  SetLength(seq, 3);
+  Move(FBuffer^[AOffset], seq[1], Length(seq));
+  if seq <> #00#01#01 then
+    exit;
+  inc(AOffset, Length(seq));
+
+  // AOffset now points to the begin of the ICC Color profile as documented in
+  // http://www.color.org/specification/ICC.2-2019.pdf
+
+  Result := true;
+end;
+
 
 function TMainForm.GotoNextIFD(var AOffset: Int64): Boolean;
 var
@@ -2507,10 +2818,10 @@ begin
     arg := lowercase(ParamStr(i));
     if (arg[1] = '+') or (arg[1] = '-') then
     begin
-      if arg = '-dexif' then
-        FLoadDexif := false
-      else if arg = '+dexif' then
-        FLoadDexif := true;
+      if arg = '-fpexif' then
+        FLoadFPExif := false
+      else if arg = '+fpexif' then
+        FLoadFPExif := true;
     end else
       Loadfile(ParamStr(i));
   end;
@@ -2538,17 +2849,15 @@ begin
     if T + H > Rct.Bottom then T := Rct.Bottom - H;
     if T < Rct.Top then T := Rct.Top;
     SetBounds(L, T, W, H);
+
     HexPanel.Width := ini.ReadInteger('MainForm', 'HexPanelWidth', HexPanel.Width);
     MainPageControl.PageIndex := ini.ReadInteger('MainForm', 'MainPageControl', 0);
     HexPageControl.PageIndex := ini.ReadInteger('MainForm', 'HexPageControl', 0);
     fpExifPageControl.PageIndex := ini.ReadInteger('MainForm', 'fpExifPageControl', 0);
-//    dExifPageControl.PageIndex := ini.ReadInteger('MainForm', 'dExifPageControl', 0);
 
-    //FLoadDExif := ini.ReadBool('Configuration', 'Load dExif', FLoadDexif);
     FLoadFPExif := Ini.ReadBool('Configuration', 'Load fpExit', FLoadFPExif);
+    AcCfgUseFPExif.Checked := FLoadFPExif;
 
-    AcCfguseDExif.Checked := FLoadDExif;
-//    AcCfgUseDExifExecute();
   finally
     ini.Free;
   end;
@@ -3033,10 +3342,8 @@ begin
     ini.WriteInteger('MainForm', 'HexPageControl', HexPageControl.PageIndex);
     ini.WriteInteger('MainForm', 'MainPageControl', MainPageControl.PageIndex);
     ini.WriteInteger('MainForm', 'fpExifPageControl', fpExifPageControl.PageIndex);
-//    ini.WriteInteger('MainForm', 'dExifPageControl', dExifPageControl.PageIndex);
 
     ini.WriteBool('Configuration', 'Load fpExif', FLoadFPExif);
-//    ini.WriteBool('Configuration', 'Load dExif', FLoadDExif);
   finally
     ini.Free;
   end;
