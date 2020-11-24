@@ -6,11 +6,15 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, SynEdit, SynHighlighterXML, Forms, Controls,
-  Graphics, Dialogs, StdCtrls, ExtCtrls, EditBtn, Grids, ComCtrls,
-  Buttons, ActnList, Menus, khexeditor, kfunctions, dEXIF, dIPTC, Types,
-  mrumanager;
+  Graphics, Dialogs, StdCtrls, ExtCtrls, EditBtn, Grids, ComCtrls, Types,
+  Buttons, ActnList, Menus,
+  fpeMetaData, fpeGlobal, fpeTags, fpeExifData, fpeIPTCData,
+  mruManager,
+  mpHexEditor;
 
 type
+  TBytes = array[0..MaxInt div SizeOf(Byte) - 1] of Byte;
+  PBytes = ^TBytes;
 
   { TMainForm }
 
@@ -29,11 +33,8 @@ type
     AcCfgUseDExif: TAction;
     AcGotoIPTC: TAction;
     ActionList: TActionList;
-    CbHexAddressMode: TCheckBox;
-    CbHexSingleBytes: TCheckBox;
-    IPTC_TagsGrid: TStringGrid;
-    dExif_ThumbTagsGrid: TStringGrid;
-    HexEditor: TKHexEditor;
+    cbHexAddressMode: TCheckBox;
+    cbHexSingleBytes: TCheckBox;
     Image: TImage;
     ImageList: TImageList;
     AnalysisInfo: TLabel;
@@ -64,7 +65,7 @@ type
     MnuFile: TMenuItem;
     OpenDialog: TOpenDialog;
     HexPageControl: TPageControl;
-    dExifPageControl: TPageControl;
+    fpExifPageControl: TPageControl;
     Panel2: TPanel;
     HexPanel: TPanel;
     PgHex: TTabSheet;
@@ -76,10 +77,11 @@ type
     StatusBar: TStatusBar;
     AnalysisGrid: TStringGrid;
     PgImage: TTabSheet;
-    PgDExifTags: TTabSheet;
-    PgDExifThumbTags: TTabSheet;
-    PgDExifXML: TTabSheet;
-    PgIPTCTags: TTabSheet;
+    fpExifPage: TTabSheet;
+    fpExifGridPage: TTabSheet;
+    IPTCGridPage: TTabSheet;
+    IPTCGrid: TStringGrid;
+    ExifGrid: TStringGrid;
     TbGotoSOF1: TToolButton;
     TbGotoSOF2: TToolButton;
     TbGotoSOF3: TToolButton;
@@ -106,7 +108,6 @@ type
     ToolButton7: TToolButton;
     ToolButton8: TToolButton;
     ToolButton9: TToolButton;
-    XML_SynEdit: TSynEdit;
     SynXMLSyn: TSynXMLSyn;
     PgAnalysis: TTabSheet;
     PgConverter: TTabSheet;
@@ -122,8 +123,6 @@ type
     ToolButton1: TToolButton;
     ToolButton2: TToolButton;
     ValueGrid: TStringGrid;
-    dExif_TagsGrid: TStringGrid;
-    PgDExif: TTabSheet;
     procedure AcCfgUseDExifExecute(Sender: TObject);
     procedure AcFileOpenExecute(Sender: TObject);
     procedure AcFileQuitExecute(Sender: TObject);
@@ -132,18 +131,16 @@ type
     procedure AcHelpAboutExecute(Sender: TObject);
     procedure AcImgFitExecute(Sender: TObject);
     procedure AnalysisGridClick(Sender: TObject);
-    procedure AnalysisGridPrepareCanvas(sender: TObject; aCol, aRow: Integer;
-      aState: TGridDrawState);
-    procedure CbHexAddressModeChange(Sender: TObject);
-    procedure CbHexSingleBytesChange(Sender: TObject);
-    procedure dExifGridCompareCells(Sender: TObject; ACol, ARow, BCol,
+    procedure AnalysisGridPrepareCanvas(Sender: TObject; ACol, ARow: Integer;
+      AState: TGridDrawState);
+    procedure cbHexAddressModeChange(Sender: TObject);
+    procedure cbHexSingleBytesChange(Sender: TObject);
+    procedure ExifGridCompareCells(Sender: TObject; ACol, ARow, BCol,
       BRow: Integer; var Result: integer);
     procedure FormCreate(Sender: TObject);
     procedure FormDeactivate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure HexEditorClick(Sender: TObject);
-    procedure HexEditorKeyDown(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
     procedure MainPageControlChange(Sender: TObject);
     procedure MRUMenuManagerRecentFile(Sender:TObject; const AFileName:string);
     procedure TagsGridPrepareCanvas(sender: TObject; aCol, aRow: Integer;
@@ -156,7 +153,7 @@ type
     procedure ValueGridClick(Sender: TObject);
 
   private
-    FImgData: TImgData;
+    FImgInfo: TImgInfo;
     FFileName: String;
     FCurrOffset: Int64;
     FBuffer: PBytes;
@@ -167,7 +164,9 @@ type
     IFDList: array[0..4] of Int64;
     FCurrIFDIndex: Integer;
     FMRUMenuManager : TMRUMenuManager;
+    FHexEditor: TMPHexEditor;
     FLoadDExif: Boolean;
+    FLoadFPExif: Boolean;
     procedure DisableAllBtns;
     function DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
     function DisplayGenericMarker(AOffset: Int64): Boolean;
@@ -198,7 +197,8 @@ type
     procedure GotoOffset(AOffset: Int64);
     function GotoSubIFD(ATag: Word; var AOffset: Int64; ATiffHeaderOffset: Int64): Boolean;
     procedure LoadFile(const AFileName: String);
-    procedure Populate_dExifGrid(AKind: Integer);
+//    procedure Populate_dExifGrid(AKind: Integer);
+    procedure Populate_fpExifGrids;
     procedure Populate_ValueGrid;
     function ScanIFDs: Boolean;
     procedure StatusMsg(const AMsg: String);
@@ -223,8 +223,7 @@ implementation
 {$R *.lfm}
 
 uses
-  LCLType, StrUtils, Math, IniFiles,
-  KEditCommon,
+  LCLType, StrUtils, Math, IniFiles, TypInfo,
   esAbout;
 
 const
@@ -300,10 +299,10 @@ const
   OFFSET_MASK = '%d ($%0:.8x)';
 
 var
-  MaxHistory: Integer = 10;
+  MaxHistory: Integer = 16;
 
 type
-  THexEditorOpener = class(TKHexEditor);
+  TMPHexEditorOpener = class(TMPHexEditor);
 
 function GetFixedFontName: String;
 var
@@ -401,13 +400,13 @@ begin
   Scrollbox.Visible := not AcImgFit.Checked;
 end;
 
+
 procedure TMainForm.AnalysisGridClick(Sender: TObject);
 var
-  sel: TKHexEditorSelection;
-  n: Integer;
+  idx, n: Integer;
   s: String;
 begin
-  sel := HexEditor.SelStart;
+  idx := FHexEditor.SelStart;
 
   s := AnalysisGrid.Cells[0, AnalysisGrid.Row];
   n := pos(' ', s);
@@ -415,20 +414,17 @@ begin
     s := Copy(s, 1, n-1);
   if not TryStrToInt(s, n) then
     exit;
-  if n > 0 then begin
-    sel.Index := n;
-    sel.Digit := 0;
-    HexEditor.SelStart := sel;
-    n := n + StrToInt(AnalysisGrid.Cells[1, AnalysisGrid.Row]) - 1;
-    sel.Index := n;
-    sel.Digit := 1;
-    HexEditor.SelEnd := sel;
-  end else
-    HexEditor.SelEnd := sel;
 
-  if not HexEditor.CaretVisible then
-    HexEditor.ExecuteCommand(ecScrollCenter);;
+  if n > 0 then begin
+    FHexEditor.SelStart := n;
+    n := n + StrToInt(AnalysisGrid.Cells[1, AnalysisGrid.Row]) - 1;
+    FHexEditor.SelEnd := n;
+  end else
+    FHexEditor.SelEnd := idx;
+
+  FHexEditor.CenterCursorPosition;
 end;
+
 
 procedure TMainForm.AnalysisGridPrepareCanvas(sender: TObject; aCol,
   aRow: Integer; aState: TGridDrawState);
@@ -440,36 +436,26 @@ begin
     AnalysisGrid.Canvas.Font.Style := [fsBold];
 end;
 
+
 procedure TMainForm.BeforeRun;
 begin
   ReadFromIni;
   ReadArgs;
 end;
 
-procedure TMainForm.CbHexAddressModeChange(Sender: TObject);
+
+procedure TMainForm.cbHexAddressModeChange(Sender: TObject);
 begin
-  HexEditor.AddressMode := TKHexEditorAddressMode(ord(CbHexAddressMode.Checked));
-  case HexEditor.AddressMode of
-    eamHex: HexEditor.AddressPrefix := '$';
-    eamDec: HexEditor.AddressPrefix := ' ';
-  end;
+  FHexEditor.RulerNumberBase := IfThen(cbHexAddressMode.Checked, 16, 10);
+  FHexEditor.OffsetFormat := IfThen(cbHexAddressMode.Checked, '-!10:$|', '-!0A: |');
 end;
 
-procedure TMainForm.CbHexSingleBytesChange(Sender: TObject);
+
+procedure TMainForm.cbHexSingleBytesChange(Sender: TObject);
 begin
-  HexEditor.DigitGrouping := IfThen(CbHexSingleBytes.Checked, 1, 2);
+  FHexEditor.BytesPerColumn := IfThen(cbHexSingleBytes.Checked, 1, 2);
 end;
 
-procedure TMainForm.dExifGridCompareCells(Sender: TObject; ACol, ARow, BCol,
-  BRow: Integer; var Result: integer);
-var
-  sA, sB: String;
-begin
-  sA := dExif_TagsGrid.Cells[ACol, ARow];
-  sB := dExif_TagsGrid.Cells[BCol, BRow];
-  Result := CompareText(sA, sB);
-  if dExif_TagsGrid.SortOrder = soDescending then Result := -Result;
-end;
 
 function TMainForm.DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
 var
@@ -482,6 +468,7 @@ var
   dssize: Word;
   len: Integer;
   recNo: Integer;
+  tagDef: TTagDef;
 begin
   Result := false;
 
@@ -600,12 +587,15 @@ begin
     numbytes := 1;
     val := FBuffer^[AOffset];
     s := 'Dataset number of dataset #' + IntToStr(itemCounter);
-    if (recNo = 2) then
-      for i:=0 to High(IPTCTable) do
-        if IPTCTable[i].Tag = val then begin
-          s := s + ': ' + IPTCTable[i].Desc;
-          break;
-        end;
+    if recNo = 2 then
+    begin
+      tagDef := FindIPTCTagDef(TAGPARENT_IPTC + $0200 + val);
+      if tagDef <> nil then
+        s := s + ': ' + tagDef.Desc
+      else
+        s := s + ': <not found>';
+    end;
+
     AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
     AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
     AnalysisGrid.Cells[2, j] := IntToStr(val);
@@ -905,7 +895,8 @@ var
   i, j: Integer;
   numBytes: byte;
   s: String;
-  pTag: PTagEntry;
+//  pTag: PTagEntry;
+  pTag: TTagDef;
   dt: byte;
   ds: Integer;
   nb: Integer;
@@ -932,14 +923,18 @@ begin
     if not GetExifIntValue(AOffset, numbytes, val) then
       exit;
 
+    pTag := FindExifTagDef(val);
+    {
     if FCurrIFDIndex = INDEX_GPS then
       pTag := FindGpsTag(val)
     else
       pTag := FindExifTag(val);
+      }
     if pTag = nil then
       s := 'unknown'
     else
-      s := pTag^.Desc;
+      s := pTag.Desc;
+//      s := pTag^.Desc;
     AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
     AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
     AnalysisGrid.Cells[2, j] := Format('%d ($%.4x)', [val, val]);
@@ -1285,6 +1280,19 @@ begin
 end;
 
 
+procedure TMainForm.ExifGridCompareCells(Sender: TObject;
+  ACol, ARow, BCol, BRow: Integer; var Result: integer);
+var
+  sA, sB: String;
+begin
+  sA := ExifGrid.Cells[ACol, ARow];
+  sB := ExifGrid.Cells[BCol, BRow];
+  Result := CompareText(sA, sB);
+  if ExifGrid.SortOrder = soDescending then
+    Result := -Result;
+end;
+
+
 function TMainForm.FindMarker(AMarker: byte): Int64;
 var
   p: PByte;
@@ -1417,6 +1425,7 @@ var
 begin
   FCurrOffset := -1;
   FLoadDExif := true;
+  FLoadFPExif := true;
 
   TbGotoSOI.Tag := MARKER_SOI;
   TbGotoAPP0.Tag := MARKER_APP0;
@@ -1455,18 +1464,26 @@ begin
     Name := 'MRUMenuManager';
     IniFileName := CalcIniName;
     IniSection := 'RecentFiles';
-    MaxRecent := 16;
+    MaxRecent := MaxHistory;
     MenuCaptionMask := '&%x - %s';    // & --> create hotkey
     MenuItem := MnuMostRecentlyUsed;
     PopupMenu := RecentFilesPopup;
     OnRecentFile := @MRUMenuManagerRecentFile;
   end;
 
-  with HexEditor do begin
-    Font.Name := GetFixedFontName;  // The hard-coded Courier New does not exist in Linux
-    Font.Style := [];
-    Font.Pitch := fpDefault;
-    Font.Quality := fqClearType;
+  FHexEditor := TMPHexEditor.Create(self);
+  with FHexEditor do
+  begin
+    Parent := PgHex;
+    Width := 600;
+    Align := alLeft;
+    Font.Name := GetFixedFontName;   // The hard-coded Courier New does not exist in Linux
+    Font.Size := 9;
+    BytesPerColumn := IfThen(cbHexSingleBytes.Checked, 1, 2);
+    RulerNumberBase := IfThen(cbHexAddressMode.Checked, 16, 10);
+    OffsetFormat := IfThen(cbHexAddressMode.Checked, '-!10:$|', '-!0A: |');
+    ReadOnlyView := true;
+    OnClick := @HexEditorClick;
   end;
 
   with AnalysisGrid do begin
@@ -1511,10 +1528,11 @@ begin
 
   for i:=0 to HexToolbar.ButtonCount-1 do
     HexToolbar.Buttons[i].Enabled := false;
-
+  {
   Populate_dExifGrid(0);  // Exif tags
   Populate_dExifGrid(1);  // Exif thumbnail tags
   Populate_dExifGrid(2);  // IPTC tags
+  }
 end;
 
 procedure TMainForm.FormDeactivate(Sender: TObject);
@@ -1827,8 +1845,6 @@ begin
 end;
 
 procedure TMainForm.GotoOffset(AOffset: Int64);
-var
-  sel: TKHexEditorSelection;
 begin
   if FBuffer = nil then
     exit;
@@ -1844,17 +1860,15 @@ begin
   end;
 
   FCurrOffset := AOffset;
-  sel := HexEditor.SelStart;
-  sel.Index := AOffset;
-  sel.Digit := 0;
-  HexEditor.SelStart := sel;
-  HexEditor.SelEnd := sel;
-  if not HexEditor.CaretVisible then
-    HexEditor.ExecuteCommand(ecScrollCenter);
+  FHexEditor.SelStart := AOffset;
+  FHexEditor.SelEnd := AOffset;
+  FHexEditor.CenterCursorPosition;
+
   Populate_ValueGrid;
   UpdateStatusbar;
   TbNextSegment.Enabled := FBuffer^[AOffset] = $FF;
 end;
+
 
 function TMainForm.GotoSubIFD(ATag: Word;
   var AOffset: Int64; ATIFFHeaderOffset: Int64): boolean;
@@ -1891,9 +1905,10 @@ end;
 
 procedure TMainForm.HexEditorClick(Sender: TObject);
 begin
-  GoToOffset(HexEditor.SelStart.Index);
+  GotoOffset(FHexEditor.SelStart);
 end;
 
+(*
 procedure TMainForm.HexEditorKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 var
@@ -1942,6 +1957,7 @@ begin
   // Don't process these keys any more!
   Key := 0;
 end;
+*)
 
 procedure TMainForm.MainPageControlChange(Sender: TObject);
 begin
@@ -1957,7 +1973,7 @@ end;
 procedure TMainForm.LoadFile(const AFileName: String);
 var
   i, j: Integer;
-  t: TTagEntry;
+//  t: TTagEntry;
   L: TStringList;
   crs: TCursor;
 begin
@@ -1982,9 +1998,9 @@ begin
   crs := Screen.Cursor;
   Screen.Cursor := crHourglass;
   try
-    HexEditor.LoadFromFile(AFileName);
-    FBuffer := THexEditorOpener(HexEditor).Buffer;
-    FBufferSize := THexEditorOpener(HexEditor).Size;
+    FHexEditor.LoadFromFile(aFileName);
+    FBuffer := PBytes(TMPHexEditorOpener(FHexEditor).DataStorage.Memory);
+    FBufferSize := FHexEditor.DataSize;
     FCurrOffset := 0;
     HexEditorClick(nil);
 
@@ -1992,6 +2008,13 @@ begin
       UpdateIFDs;
     UpdateMarkers;
 
+    FreeAndNil(FImgInfo);
+    if FLoadFpExif then begin
+      FImgInfo := TImgInfo.Create;
+      FImgInfo.LoadFromFile(AFileName);
+      Populate_fpExifGrids;
+    end;
+                   (*
     FreeAndNil(FImgData);
     if FLoadDExif then begin
       FImgData := TImgData.Create;
@@ -2018,6 +2041,7 @@ begin
       end;
     end;
     PgDExif.TabVisible := FLoadDExif;
+    *)
 
     Image.Picture.LoadFromFile(AFileName);
     Image.Width := FWidth;
@@ -2030,6 +2054,7 @@ begin
   end;
 end;
 
+(*
 // AKind = 0  --> dExif
 // AKind = 1  --> dExif thumbnail
 // AKind = 2  --> IPTC
@@ -2123,6 +2148,125 @@ begin
     ColWidths[5] := 200;
     ColWidths[6] := 200;
   end;
+end;
+*)
+
+
+function BytesToStr(B: fpeGlobal.TBytes; MaxLen: Integer): String;
+var
+  i, n: Integer;
+  suffix: String = '';
+begin
+  Result := '';
+  n := Length(B);
+  if n = 0 then
+    exit;
+  Result := Format('%.2x', [B[0]]);
+  if n > MaxLen then
+  begin
+    n := MaxLen;
+    suffix := '...';
+  end;
+  for i := 1 to n-1 do
+    Result := Format('%s %.2x', [Result, B[i]]);
+  Result := Result + suffix;
+end;
+
+
+procedure TMainForm.Populate_fpExifGrids;
+var
+  i, row, w: Integer;
+  lTag: TTag;
+  suffix: string;
+begin
+  if FImgInfo.HasExif then begin
+    fpExifGridPage.TabVisible := true;
+
+    //FImageOrientation := FImgInfo.ExifData.ImgOrientation;
+    FImgInfo.ExifData.ExportOptions := FImgInfo.ExifData.ExportOptions + [eoTruncateBinary];
+    ExifGrid.RowCount := FImgInfo.ExifData.TagCount + 1;
+    ExifGrid.ColCount := 10;
+    ExifGrid.Cells[0, 0] := 'Tag ID';
+    ExifGrid.Cells[1, 0] := 'Tag Group';
+    ExifGrid.Cells[2, 0] := 'Tag';
+    ExifGrid.Cells[3, 0] := 'Name';
+    ExifGrid.Cells[4, 0] := 'Description';
+    ExifGrid.Cells[5, 0] := 'Tag type';
+    ExifGrid.Cells[6, 0] := 'Count';
+    ExifGrid.Cells[7, 0] := 'Endian';
+    ExifGrid.Cells[8, 0] := 'Value';
+    ExifGrid.Cells[9, 0] := 'Raw data';
+
+    ExifGrid.FixedCols := 0;
+    for i := 0 to FImgInfo.ExifData.TagCount-1 do begin
+      row := i+1;
+      lTag := FImgInfo.ExifData.TagByIndex[i];
+
+      if lTag is TMakerNoteStringTag then
+        suffix := ':' + IntToStr(TMakerNoteStringTag(lTag).Index)
+      else if lTag is TMakerNoteIntegerTag then
+        suffix := ':' + IntToStr(TMakerNoteIntegerTag(lTag).Index)
+      else if lTag is TMakerNoteFloatTag then
+        suffix := ':' + IntToStr(TMakerNoteFloatTag(lTag).Index)
+      else
+        suffix := '';
+
+      if lTag is TVersionTag then
+        TVersionTag(lTag).Separator := '.';
+
+      ExifGrid.Cells[0, row] := Format('%0:d ($%0:4x)', [lTag.TagIDRec.Tag]);
+      ExifGrid.Cells[1, row] := NiceGroupNames[lTag.Group];
+      ExifGrid.Cells[2, row] := Format('$%.04x:$%.04x%s', [lTag.TagIDRec.Parent, lTag.TagIDRec.Tag, suffix]);
+      ExifGrid.Cells[3, row] := lTag.Name;
+      ExifGrid.Cells[4, row] := lTag.Description;
+      ExifGrid.Cells[5, row] := GetEnumName(TypeInfo(TTagType), integer(lTag.TagType));
+      ExifGrid.Cells[6, row] := IntToStr(lTag.Count);
+      ExifGrid.Cells[7, row] := IfThen(lTag.BigEndian, 'BE', 'LE');
+      ExifGrid.Cells[8, row] := lTag.AsString;
+      ExifGrid.Cells[9, row] := BytesToStr(lTag.RawData, 16);
+    end;
+
+    for i:=0 to ExifGrid.ColCount-1 do begin
+      w := ExifGrid.Canvas.TextWidth(ExifGrid.Cells[i, 0]);
+      for row := 1 to ExifGrid.RowCount-1 do
+        w := Max(w, ExifGrid.Canvas.TextWidth(ExifGrid.Cells[i, row]));
+      ExifGrid.ColWidths[i] := w + 4*varCellPadding;
+    end;
+  end else
+    fpExifGridPage.TabVisible := false;
+
+  if FImgInfo.HasIptc then begin
+    IPTCGridPage.TabVisible := true;
+    IPTCGrid.RowCount := FImgInfo.IptcData.TagCount + 1;
+    IPTCGrid.ColCount := 7;
+    IPTCGrid.Cells[0, 0] := 'Tag ID';
+    IPTCGrid.Cells[1, 0] := 'Tag';
+    IPTCGrid.Cells[2, 0] := 'Name';
+    IPTCGrid.Cells[3, 0] := 'Description';
+    IPTCGrid.Cells[4, 0] := 'Tag type';
+    IPTCGrid.Cells[5, 0] := 'Count';
+    IPTCGrid.Cells[6, 0] := 'Value';
+    IPTCGrid.FixedCols := 0;
+    for i := 0 to FImgInfo.IptcData.TagCount-1 do begin
+      row := i + 1;
+      lTag := FImgInfo.IptcData.TagByIndex[i];
+      IPTCGrid.Cells[0, row] := Format('%0:d ($%0:4x)', [lTag.TagIDRec.Tag]);
+      IPTCGrid.Cells[1, row] := Format('$%.04x:$%.04x%s', [lTag.TagIDRec.Parent, lTag.TagIDRec.Tag, suffix]);
+      IPTCGrid.Cells[2, row] := lTag.Name;
+      IPTCGrid.Cells[3, row] := lTag.Description;
+      IPTCGrid.Cells[4, row] := GetEnumName(TypeInfo(TTagType), integer(lTag.TagType));
+      IPTCGrid.Cells[5, row] := IntToStr(lTag.Count);
+      IPTCGrid.Cells[6, row] := lTag.AsString;
+    end;
+
+    for i:=0 to IPTCGrid.ColCount-1 do begin
+      w := IPTCGrid.Canvas.TextWidth(IPTCGrid.Cells[i, 0]);
+      for row := 1 to IPTCGrid.RowCount-1 do
+        w := Max(w, IPTCGrid.Canvas.TextWidth(IPTCGrid.Cells[i, row]));
+      IPTCGrid.ColWidths[i] := w + 4*varCellPadding;
+    end;
+  end else
+    IPTCGridPage.TabVisible := false;
 end;
 
 procedure TMainForm.Populate_ValueGrid;
@@ -2397,9 +2541,12 @@ begin
     HexPanel.Width := ini.ReadInteger('MainForm', 'HexPanelWidth', HexPanel.Width);
     MainPageControl.PageIndex := ini.ReadInteger('MainForm', 'MainPageControl', 0);
     HexPageControl.PageIndex := ini.ReadInteger('MainForm', 'HexPageControl', 0);
-    dExifPageControl.PageIndex := ini.ReadInteger('MainForm', 'dExifPageControl', 0);
+    fpExifPageControl.PageIndex := ini.ReadInteger('MainForm', 'fpExifPageControl', 0);
+//    dExifPageControl.PageIndex := ini.ReadInteger('MainForm', 'dExifPageControl', 0);
 
-    FLoadDExif := ini.ReadBool('Configuration', 'Load dExif', FLoadDexif);
+    //FLoadDExif := ini.ReadBool('Configuration', 'Load dExif', FLoadDexif);
+    FLoadFPExif := Ini.ReadBool('Configuration', 'Load fpExit', FLoadFPExif);
+
     AcCfguseDExif.Checked := FLoadDExif;
 //    AcCfgUseDExifExecute();
   finally
@@ -2860,23 +3007,16 @@ begin
     Statusbar.Panels[PANEL_OFFSET].Text := '';
 end;
 
+
 procedure TMainForm.ValueGridClick(Sender: TObject);
 var
-  sel: TKHexEditorSelection;
   n: Integer;
 begin
-  sel := HexEditor.SelStart;
-
   n := GetValueGridDataSize;
-  if n > 0 then begin
-    sel.Digit := 0;
-    HexEditor.SelStart := sel;
-    inc(sel.Index, n-1);
-    sel.Digit := 1;
-    HexEditor.SelEnd := sel;
-  end else
-    HexEditor.SelEnd := sel;
+  if n > 0 then
+    FHexEditor.SelCount := n;
 end;
+
 
 procedure TMainForm.WriteToIni;
 var
@@ -2892,9 +3032,11 @@ begin
     ini.WriteInteger('MainForm', 'HexPanelWidth', HexPanel.Width);
     ini.WriteInteger('MainForm', 'HexPageControl', HexPageControl.PageIndex);
     ini.WriteInteger('MainForm', 'MainPageControl', MainPageControl.PageIndex);
-    ini.WriteInteger('MainForm', 'dExifPageControl', dExifPageControl.PageIndex);
+    ini.WriteInteger('MainForm', 'fpExifPageControl', fpExifPageControl.PageIndex);
+//    ini.WriteInteger('MainForm', 'dExifPageControl', dExifPageControl.PageIndex);
 
-    ini.WriteBool('Configuration', 'Load dExif', FLoadDExif);
+    ini.WriteBool('Configuration', 'Load fpExif', FLoadFPExif);
+//    ini.WriteBool('Configuration', 'Load dExif', FLoadDExif);
   finally
     ini.Free;
   end;
