@@ -173,6 +173,8 @@ type
     procedure DisableAllBtns;
     function DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
     function DisplayColorProfile(AOffset: Int64): Boolean;
+    procedure DisplayColorProfileTag(ATagIndex: Integer;
+      AStartOffset: Int64; var AOffset: Int64; var ARow: Integer);
     function DisplayGenericMarker(AOffset: Int64): Boolean;
     function DisplayMarker(AOffset: Int64): Boolean;
     function DisplayMarkerAPP0(AOffset: Int64): Boolean;
@@ -180,7 +182,7 @@ type
     function DisplayMarkerAPP13(AOffset: Int64): Boolean;
     function DisplayMarkerCOM(AOffset: Int64): Boolean;
     function DisplayMarkerEOI(AOffset: Int64): Boolean;
-    function DisplayIFD(AOffset: Int64; ATIFFHeaderOffset: Int64;
+    function DisplayIFD(AOffset, ATIFFHeaderOffset: Int64; AParentTagID: Word;
       AInfo: String): Boolean;
     function DisplayMarkerSOF0(AOffset: Int64): Boolean;
     function DisplayMarkerSOI(AOffset: Int64): Boolean;
@@ -479,7 +481,7 @@ end;
 function TMainForm.DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
 var
   numbytes: Integer;
-  s: String;
+  s: String = '';
   j, i: Integer;
   size: Integer;
   val: Int64;
@@ -666,19 +668,21 @@ type
     Year, Month, Day, Hour, Minute, Second: Word;
   end;
 var
+  startOffset: Int64;
   numBytes: Integer;
   i, j: Integer;
   val: Int64;
-  s: String;
+  s: String = '';
   dt: TICCDateTime;
   dw: DWord;
-  b16: array[0..15] of byte;
+  numTags: Integer;
 begin
   Result := false;
 
   AnalysisInfo.Caption := 'ICC Color Profile';
   AnalysisGrid.RowCount := AnalysisGrid.FixedRows + 1000;
-  j := AnalysisGrid.Fixedrows;
+  j := AnalysisGrid.FixedRows;
+  startOffset := AOffset;
 
   numBytes := 4;
   if not GetBEIntValue(AOffset, numbytes, val) then
@@ -906,11 +910,249 @@ begin
   AnalysisGrid.Cells[3, j] := 'Tag count';
   inc(j);
   inc(AOffset, numBytes);
+  numTags := val;
+
+  for i := 1 to numTags do
+    DisplayColorProfileTag(i, startOffset, AOffset, j);
+(*
+    numBytes := 4;
+    SetLength(s, numbytes);
+    Move(FBuffer^[AOffset], s[1], numBytes);
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+    AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+    AnalysisGrid.Cells[2, j] := s;
+    AnalysisGrid.Cells[3, j] := Format('#%d: Tag "%s"', [i, s]);
+    inc(j);
+    inc(AOffset, numBytes);
+
+    numBytes := 4;
+    if not GetBEIntValue(AOffset, numBytes, val) then
+      exit;
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+    AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+    AnalysisGrid.Cells[2, j] := IntToStr(val);
+    AnalysisGrid.Cells[3, j] := 'Offset to data';
+    inc(j);
+    inc(AOffset, numBytes);
+    offs := startoffset + val;
+
+    numBytes := 4;
+    if not GetBEIntValue(AOffset, numBytes, val) then
+      exit;
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+    AnalysisGrid.Cells[1, j] := IntToStr(numBytes);
+    AnalysisGrid.Cells[2, j] := IntToStr(val);
+    AnalysisGrid.Cells[3, j] := 'Element size for the number of bytes in the tag data element';
+    inc(j);
+    inc(AOffset, numBytes);
+
+    // Copy tag data value to buffer b
+    SetLength(b, val);
+    Move(FBuffer^[offs], b[0], Length(b));
+
+    // Get tag type
+    SetLength(s, 4);
+    Move(b[0], s[1], 4);
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [offs]);
+    AnalysisGrid.Cells[1, j] := '4';
+    AnalysisGrid.Cells[2, j] := s;
+    AnalysisGrid.Cells[3, j] := 'Tag type';
+    inc(j);
+    inc(offs, 4);
+
+    // Reserved
+    Move(b[4], dw, 4);
+    AnalysisGrid.Cells[0, j] := Format(Offset_Mask, [offs]);
+    AnalysisGrid.Cells[1, j] := '4';
+    AnalysisGrid.Cells[2, j] := IntToStr(BEToN(dw));
+    AnalysisGrid.Cells[3, j] := '(reserved, must be 0)';
+    inc(j);
+    inc(offs, 4);
+
+    case s of
+      'desc':    // Description tag
+        begin
+          Move(b[8], dw, 4);
+          dw := BEToN(dw);
+          AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [offs]);
+          AnalysisGrid.Cells[1, j] := '4';
+          AnalysisGrid.Cells[2, j] := IntToStr(dw);
+          AnalysisGrid.Cells[3, j] := 'Description length';
+          inc(j);
+          SetLength(s, dw);
+          Move(b[12], s[1], dw);
+          AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [offs]);
+          AnalysisGrid.Cells[1, j] := IntToStr(dw);
+          AnalysisGrid.Cells[2, j] := s;
+          AnalysisGrid.Cells[3, j] := 'Description';
+          inc(j);
+        end;
+      'text':      // Text tag
+        begin
+          SetLength(s, Length(b) - 8);
+          Move(b[8], s[1], Length(s));
+          AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [offs]);
+          AnalysisGrid.Cells[1, j] := IntToStr(Length(s));
+          AnalysisGrid.Cells[2, j] := s;
+          AnalysisGrid.Cells[3, j] := 'Text';
+          inc(j);
+        end;
+    end;
+  end;
+  *)
 
   AnalysisGrid.RowCount := j;
   Result := true;
 end;
 
+
+procedure TMainForm.DisplayColorProfileTag(ATagIndex: Integer;
+  AStartOffset: Int64; var AOffset: Int64; var ARow: Integer);
+var
+  i, numBytes: Integer;
+  sFull: String;
+  val: Int64;
+  offs: Int64;
+  dw: DWord = 0;
+  w: Word = 0;
+  b: fpeGlobal.TBytes = nil;
+  s: String = '';
+begin
+  numBytes := 4;
+  SetLength(s, numbytes);
+  Move(FBuffer^[AOffset], s[1], numBytes);
+  AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, ARow] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, ARow] := s;
+  sFull := '';
+  case s of
+    'bkpt': sFull := 'Media black point';
+    'bTRC': sFull := 'Blue tone reproduction curve';
+    'bXYZ': sFull := 'Blue colorant';
+    'cprt': sFull := 'Copyright';
+    'gTRC': sFull := 'Green tone reproduction curve';
+    'gXYZ': sFull := 'Green colorant';
+    'rTRC': sFull := 'Red tone reproduction curve';
+    'rXYZ': sFull := 'Red colorant';
+    'wtpt': sFull := 'Media white point';
+  end;
+  s := '"' + s + '"';
+  if sFull <> '' then s := s + ' (' + sFull + ')';
+  AnalysisGrid.Cells[3, ARow] := Format('#%d: Tag signature %s', [ATagIndex, s]);
+  inc(ARow);
+  inc(AOffset, numBytes);
+
+  numBytes := 4;
+  if not GetBEIntValue(AOffset, numBytes, val) then
+    exit;
+  AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, ARow] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, ARow] := IntToStr(val);
+  AnalysisGrid.Cells[3, ARow] := 'Offset to data';
+  inc(ARow);
+  inc(AOffset, numBytes);
+  offs := AStartOffset + val;
+
+  numBytes := 4;
+  if not GetBEIntValue(AOffset, numBytes, val) then
+    exit;
+  AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [AOffset]);
+  AnalysisGrid.Cells[1, ARow] := IntToStr(numBytes);
+  AnalysisGrid.Cells[2, ARow] := IntToStr(val);
+  AnalysisGrid.Cells[3, ARow] := 'Element size for the number of bytes in the tag data element';
+  inc(ARow);
+  inc(AOffset, numBytes);
+
+  // Copy tag data value to buffer b
+  SetLength(b, val);
+  Move(FBuffer^[offs], b[0], Length(b));
+
+  // Get tag type
+  SetLength(s, 4);
+  Move(b[0], s[1], 4);
+  AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [offs]);
+  AnalysisGrid.Cells[1, ARow] := '4';
+  AnalysisGrid.Cells[2, ARow] := s;
+  AnalysisGrid.Cells[3, ARow] := 'Tag type';
+  inc(ARow);
+  inc(offs, 4);
+
+  // Reserved
+  Move(b[4], dw, 4);
+  AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [offs]);
+  AnalysisGrid.Cells[1, ARow] := '4';
+  AnalysisGrid.Cells[2, ARow] := IntToStr(BEToN(dw));
+  AnalysisGrid.Cells[3, ARow] := '(reserved, must be 0)';
+  inc(ARow);
+  inc(offs, 4);
+
+  case s of
+    'curv':    // curve
+      begin
+        // Number of points on curve
+        Move(b[8], dw, 4);
+        dw := BEToN(dw);
+        AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [offs]);
+        AnalysisGrid.Cells[1, ARow] := '4';
+        AnalysisGrid.Cells[2, ARow] := IntToStr(dw);
+        AnalysisGrid.Cells[3, ARow] := 'Points count';
+        inc(ARow);
+        Move(b[12], w, 2);
+        s := IntToStr(BEToN(w));
+        for i := 1 to dw-1 do
+        begin
+          Move(b[12+2*i], w, 2);
+          s := s + '; ' + IntToStr(BEToN(w));
+        end;
+        AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [offs]);
+        AnalysisGrid.Cells[1, ARow] := IntToStr(QWord(dw)*2);  // QWord to silence the compiler
+        AnalysisGrid.Cells[2, ARow] := s;
+        AnalysisGrid.Cells[3, ARow] := 'Curve values';
+      end;
+
+    'desc':    // Description type
+      begin
+        Move(b[8], dw, 4);
+        dw := BEToN(dw);
+        AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [offs]);
+        AnalysisGrid.Cells[1, ARow] := '4';
+        AnalysisGrid.Cells[2, ARow] := IntToStr(dw);
+        AnalysisGrid.Cells[3, ARow] := 'Description length';
+        inc(ARow);
+        SetLength(s, dw);
+        Move(b[12], s[1], dw);
+        AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [offs]);
+        AnalysisGrid.Cells[1, ARow] := IntToStr(dw);
+        AnalysisGrid.Cells[2, ARow] := s;
+        AnalysisGrid.Cells[3, ARow] := 'Description (ASCII)';
+      end;
+
+    'text':      // Text type
+      begin
+        SetLength(s, Length(b) - 8);
+        Move(b[8], s[1], Length(s));
+        AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [offs]);
+        AnalysisGrid.Cells[1, ARow] := IntToStr(Length(s));
+        AnalysisGrid.Cells[2, ARow] := s;
+        AnalysisGrid.Cells[3, ARow] := 'Text';
+      end;
+
+    'XYZ ':   // XYZ type: three s15Fixed16Number numbers
+      begin
+        Move(b[8], dw, 4);
+        s := S15Fixed16NumberToStr(dw);
+        Move(b[12], dw, 4);
+        s := s + '; ' + S15Fixed16NumberToStr(dw);
+        Move(b[16], dw, 4);
+        s := s + '; ' + S15Fixed16NumberToStr(dw);
+        AnalysisGrid.Cells[0, ARow] := Format(OFFSET_MASK, [offs]);
+        AnalysisGrid.Cells[1, ARow] := '12';
+        AnalysisGrid.Cells[2, ARow] := s;
+        AnalysisGrid.Cells[3, ARow] := 'CIEXYZ tristimulus values';
+      end;
+  end;
+  inc(ARow);
+end;
 
 function TMainForm.DisplayGenericMarker(AOffset: Int64): Boolean;
 var
@@ -970,7 +1212,7 @@ end;
 
 function TMainForm.DisplayMarkerAPP0(AOffset: Int64): Boolean;
 var
-  s: String;
+  s: String = '';
   val: Int64;
   j: Integer;
   numbytes: Byte;
@@ -1077,7 +1319,7 @@ end;
 
 function TMainForm.DisplayMarkerAPP1(AOffset: Int64): Boolean;
 var
-  s: String;
+  s: String = '';
   val: Int64;
   j: Integer;
   numbytes: Byte;
@@ -1124,7 +1366,7 @@ end;
 // Source: https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
 function TMainForm.DisplayMarkerAPP13(AOffset: Int64): Boolean;
 var
-  s: String;
+  s: String = '';
   val: Int64;
   j: Integer;
   numbytes: Byte;
@@ -1169,8 +1411,8 @@ begin
 end;
 
 
-function TMainForm.DisplayIFD(AOffset: Int64; ATIFFHeaderOffset: Int64;
-  AInfo: String): Boolean;
+function TMainForm.DisplayIFD(AOffset, ATIFFHeaderOffset: Int64;
+  AParentTagID: Word; AInfo: String): Boolean;
 var
   n: Int64;
   val: Int64;
@@ -1180,9 +1422,9 @@ var
   s: String;
 //  pTag: PTagEntry;
   pTag: TTagDef;
+  tagID: TTagIDRec;
   dt: byte;
   ds: Integer;
-  nb: Integer;
 begin
   Result := false;
 
@@ -1201,12 +1443,15 @@ begin
   inc(AOffset, numbytes);
   inc(j);
 
+  tagID.Parent := AParentTagID;
+
   for i:=0 to n-1 do begin
     numbytes := 2;
     if not GetExifIntValue(AOffset, numbytes, val) then
       exit;
 
-    pTag := FindExifTagDef(val);
+    tagID.Tag := val;
+    pTag := FindExifTagDef(DWord(tagID));
     {
     if FCurrIFDIndex = INDEX_GPS then
       pTag := FindGpsTag(val)
@@ -1229,18 +1474,18 @@ begin
     if not GetExifIntValue(AOffset, numbytes, val) then
       exit;
     case val of
-       1: begin nb := 1;  s := 'UInt8'; nb := 1; end;
-       2: begin nb := 1;  s := 'Zero-term. byte-string'; end;
-       3: begin nb := 2;  s := 'UInt16'; end;
-       4: begin nb := 4;  s := 'UInt32'; end;
-       5: begin nb := 16; s := 'Fraction'; end;
-       6: begin nb := 1;  s := 'Int8'; end;
-       7: begin nb := 1;  s := 'binary'; end;
-       8: begin nb := 2;  s := 'Int16'; end;
-       9: begin nb := 4;  s := 'Int32'; end;
-      10: begin nb := 8;  s := 'Signed fraction'; end;
-      11: begin nb := 4;  s := 'Single'; end;
-      12: begin nb := 8;  s := 'Double'; end;
+       1: s := 'UInt8';
+       2: s := 'Zero-term. byte-string';
+       3: s := 'UInt16';
+       4: s := 'UInt32';
+       5: s := 'Fraction';
+       6: s := 'Int8';
+       7: s := 'binary';
+       8: s := 'Int16';
+       9: s := 'Int32';
+      10: s := 'Signed fraction';
+      11: s := 'Single';
+      12: s := 'Double';
       else s := '';
     end;
     dt := val;
@@ -1254,7 +1499,7 @@ begin
     numbytes := 4;
     if not GetExifIntValue(AOffset, numbytes, val) then
       exit;
-    ds := val; // * nb;
+    ds := val;
     AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
     AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
     AnalysisGrid.Cells[2, j] := IntToStr(ds);
@@ -1314,7 +1559,7 @@ var
   j: Integer;
   numbytes: Integer;
   val: Int64;
-  s: String;
+  s: String = '';
 begin
   Result := false;
 
@@ -1355,7 +1600,6 @@ end;
 
 function TMainForm.DisplayMarkerEOI(AOffset: Int64): Boolean;
 var
-  s: String;
   val: Int64;
   j: Integer;
   numbytes: Byte;
@@ -1381,7 +1625,6 @@ end;
 
 function TMainForm.DisplayMarkerSOF0(AOffset: Int64): Boolean;
 var
-  s: String;
   val: Int64;
   j: Integer;
   numbytes: Byte;
@@ -1501,7 +1744,6 @@ end;
 
 function TMainForm.DisplayMarkerSOI(AOffset: Int64): Boolean;
 var
-  s: String;
   val: Int64;
   j: Integer;
   numbytes: Byte;
@@ -1528,7 +1770,6 @@ end;
 
 function TMainForm.DisplayMarkerSOS(AOffset: Int64): Boolean;
 var
-  s: String;
   val: Int64;
   j: Integer;
   numbytes: Byte;
@@ -1830,10 +2071,10 @@ end;
 function TMainForm.GetBEIntValue(AOffset: Int64; AByteCount: Byte;
   out AValue: Int64): Boolean;
 var
-  b: Byte;
-  w: Word;
-  dw: DWord;
-  qw: Int64;
+  b: Byte = 0;
+  w: Word = 0;
+  dw: DWord = 0;
+  qw: Int64 = 0;
 begin
   Result := false;
   if AOffset - AByteCount >= FBufferSize then
@@ -3008,11 +3249,11 @@ begin
 
   FCurrIFDIndex := GetIFDIndex(TComponent(Sender));
   case FCurrIFDIndex of
-    INDEX_IFD0    : ok := DisplayIFD(p, TiffHeaderOffs, 'IFD0 (Image file directory 0)');
-    INDEX_EXIF    : ok := DisplayIFD(p, TIFFHeaderOffs, 'EXIF SubIFD (Image file subdirectory)');
-    INDEX_INTEROP : ok := DisplayIFD(p, TiffHeaderOffs, 'Interoperability SubIFD (Image file subdirectory)');
-    INDEX_GPS     : ok := DisplayIFD(p, TiffHeaderOffs, 'GPS SubIFD (Image file subdirectory)');
-    INDEX_IFD1    : ok := DisplayIFD(p, TiffHeaderOffs, 'IFD1 (Image file directory 1 - thumbnail)');
+    INDEX_IFD0    : ok := DisplayIFD(p, TiffHeaderOffs, TAG_PRIMARY, 'IFD0 (Image file directory 0)');
+    INDEX_EXIF    : ok := DisplayIFD(p, TIFFHeaderOffs, TAG_EXIF_OFFSET, 'EXIF SubIFD (Image file subdirectory)');
+    INDEX_INTEROP : ok := DisplayIFD(p, TiffHeaderOffs, TAG_INTEROP_OFFSET, 'Interoperability SubIFD (Image file subdirectory)');
+    INDEX_GPS     : ok := DisplayIFD(p, TiffHeaderOffs, TAG_GPS_OFFSET, 'GPS SubIFD (Image file subdirectory)');
+    INDEX_IFD1    : ok := DisplayIFD(p, TiffHeaderOffs, TAG_THUMBNAIL, 'IFD1 (Image file directory 1 - thumbnail)');
     else            ok := true;
   end;
   if not ok then
@@ -3330,7 +3571,6 @@ end;
 procedure TMainForm.WriteToIni;
 var
   ini: TCustomIniFile;
-  i: Integer;
 begin
   ini := TMemIniFile.Create(CalcIniName);
   try

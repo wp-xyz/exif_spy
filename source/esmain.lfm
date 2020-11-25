@@ -402,8 +402,8 @@ object MainForm: TMainForm
               OnClick = ValueGridClick
               ColWidths = (
                 64
-                573
-                573
+                564
+                565
               )
             end
           end
