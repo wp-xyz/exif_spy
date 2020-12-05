@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, SynEdit, SynHighlighterXML, Forms, Controls,
-  Graphics, Dialogs, StdCtrls, ExtCtrls, EditBtn, Grids, ComCtrls, Types,
+  Graphics, Dialogs, StdCtrls, ExtCtrls, Grids, ComCtrls, Types,
   Buttons, ActnList, Menus,
   fpeMetaData, fpeGlobal, fpeTags, fpeExifData, fpeIPTCData,
   mruManager,
@@ -170,6 +170,7 @@ type
     FMRUMenuManager : TMRUMenuManager;
     FHexEditor: TMPHexEditor;
     FLoadFPExif: Boolean;
+    procedure BuildAPP13Menu(AOffset: Int64);
     procedure DisableAllBtns;
     function DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
     function DisplayColorProfile(AOffset: Int64): Boolean;
@@ -196,6 +197,7 @@ type
     function GetBEIntValue(AOffset: Int64; AByteCount: Byte; out AValue: Int64): Boolean;
     function GetExifIntValue(AOffset: Int64; AByteCount: Byte; out AValue: Int64): Boolean;
     function GetExifValue(AOffset: Int64; ADataType, ADataSize: Integer): String;
+    function GetImageResourceBlockName(AID: Integer): String;
     function GetMarkerName(AMarker: Byte; Long: Boolean): String;
     function GetValueGridDataSize: Integer;
     function GotoAdobeImageResource(AResourceID: Word; var AOffset: Int64): Boolean;
@@ -207,6 +209,7 @@ type
 //    procedure Populate_dExifGrid(AKind: Integer);
     procedure Populate_fpExifGrids;
     procedure Populate_ValueGrid;
+    procedure PopupGotoImageResourceBlock(Sender: TObject);
     function ScanIFDs: Boolean;
     procedure StatusMsg(const AMsg: String);
     procedure UpdateIFDs;
@@ -303,6 +306,9 @@ const
   INDEX_GPS      = 3;
   INDEX_IFD1     = 4;
 
+  IPTC_KEY = 'Photoshop 3.0'#0;
+  ADOBE_IMAGE_RESOURCE_KEY = '8BIM';
+
   OFFSET_MASK = '%d ($%0:.8x)';
 
 var
@@ -373,6 +379,7 @@ begin
     DisplayColorProfile(offs);
   end;
 end;
+
 
 procedure TMainForm.AcGotoIPTCExecute(Sender: TObject);
 var
@@ -465,6 +472,69 @@ begin
 end;
 
 
+procedure TMainForm.BuildApp13Menu(AOffset: Int64);
+var
+  s: String;
+  numBytes: Integer;
+  n: Int64;
+  item: TMenuItem;
+  startOffs: PtrInt;
+begin
+  APP13Popup.Items.Clear;
+
+  inc(AOffset, 2);  // jump over segment ID
+  inc(AOffset, 2);  // jump over segment size
+
+  numBytes := 14;
+  SetLength(s, numbytes);
+  Move(FBuffer^[AOffset], s[1], numbytes);
+  if s <> IPTC_KEY then
+    exit;
+  inc(AOffset, numbytes);
+
+  while true do
+  begin
+    startOffs := AOffset;
+    numbytes := 4;
+    SetLength(s, numbytes);
+    Move(FBuffer^[AOffset], s[1], numbytes);
+    if s <> ADOBE_IMAGE_RESOURCE_KEY then   // '8BIM'
+      exit;
+
+    // ID of image resource block
+    inc(AOffset, numbytes);
+    numBytes := 2;
+    if not GetBEIntValue(AOffset, numbytes, n) then
+      exit;
+
+    // Create menu item
+    s := GetImageResourceBlockName(n);
+    item := TMenuItem.Create(self);
+    item.Caption := Format('$%.4x - %s', [n, s]);
+    item.Tag := startOffs;
+    item.OnClick := @PopupGotoImageResourceBlock;
+    APP13Popup.Items.Add(item);
+
+    // Length of name
+    inc(AOffset, numbytes);
+    n := FBuffer^[AOffset];
+    inc(AOffset, 1);
+    // Name
+    if n = 0 then
+      inc(AOffset)
+    else
+      inc(AOffset, n);
+
+    // Size of data block
+    numBytes := 4;
+    if not GetBEIntValue(AOffset, numBytes, n) then
+      exit;
+    if n = 1 then n := 2;
+    inc(AOffset, n + numBytes);
+  end;
+end;
+
+
 procedure TMainForm.cbHexAddressModeChange(Sender: TObject);
 begin
   FHexEditor.RulerNumberBase := IfThen(cbHexAddressMode.Checked, 16, 10);
@@ -510,35 +580,7 @@ begin
   numbytes := 2;
   if not GetBEIntValue(AOffset, numbytes, val) then
     exit;
-  case val of
-    $03E9: s := 'Macintosh print manager print info record';
-    $03ED: s := 'ResolutionInfo structure';
-    $03F3: s := 'Print flags';
-    $03F5: s := 'Color halftoning information';
-    $03F8: s := 'Color transfer functions';
-    $03FD: s := 'EPS information';
-    $03FE: s := 'Quick mask information';
-    $0400: s := 'Layer state information';
-    $0401: s := 'Working path';
-    $0402: s := 'Layers group information';
-    $0403: s := '(obsolete)';
-    $0404: s := 'IPTC-NAA record';
-    $0405: s := 'Image mode for raw format files';
-    $0406: s := 'JPEG quality';
-    $0408: s := '(Photoshop 4.0) Grid and guides information';
-    $040A: s := '(Photoshop 4.0) Copyright flag';
-    $040C: s := '(Photoshop 5.0) Thumbnail resource';
-    $040D: s := '(Photoshop 5.0) Global Angle';
-    $0414: s := '(Photoshop 5.0) Document-specific IDs seed number';
-    $0419: s := '(Photoshop 6.0) Global Altitude';
-    $041A: s := '(Photoshop 6.0) Slices';
-    $041E: s := '(Photoshop 6.0) URL List';
-    $0421: s := '(Photoshop 6.0) Version Info';
-    $0425: s := '(Photoshop 7.0) Caption digest';
-    $0426: s := '(Photoshop 7.0) Print scale';
-    $0428: s := '(Photoshop CS) Pixel Aspect Ratio';
-    else   s := 'not supported';
-  end;
+  s := GetImageResourceBlockName(val);
   AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
   AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
   AnalysisGrid.Cells[2, j] := Format('%d ($%.4x) --> ' + s, [val, val]);
@@ -2209,6 +2251,109 @@ begin
   end;
 end;
 
+{ Returns the names of the ADOBE image resource blocks. Used in APP13 segment.
+  Ref.: https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/#50577409_38034 }
+function TMainForm.GetImageResourceBlockName(AID: Integer): String;
+begin
+  case AID of
+    $03E8: Result := 'obsolete (Photoshop 2.0 only)';
+    $03E9: Result := 'Macintosh print manager print info record';
+    $03EA: Result := 'Macintosh page format information. No longer read by Photoshop. (Obsolete)';
+    $03EB: Result := '(Obsolete--Photoshop 2.0 only ) Indexed color table';
+    $03ED: Result := 'ResolutionInfo structure';
+    $03EE: Result := 'Names of the alpha channels as a series of Pascal strings.';
+    $03EF: Result := '(Obsolete) DisplayInfo structure';
+    $03F0: Result := 'Caption as a Pascal string';
+    $03F1: Result := 'Border information';
+    $03F2: Result := 'Background color';
+    $03F3: Result := 'Print flags';
+    $03F4: Result := 'Grayscale and multichannel halftoning information';
+    $03F5: Result := 'Color halftoning information';
+    $03F6: Result := 'Duotone halftoning information';
+    $03F7: Result := 'Grayscale and multichannel transfer function';
+    $03F8: Result := 'Color transfer functions';
+    $03F9: Result := 'Duotone transfer functions';
+    $03FA: Result := 'Duotone image information';
+    $03FB: Result := 'Two bytes for the effective black and white values for the dot range';
+    $03FC: Result := '(Obsolete)';
+    $03FD: Result := 'EPS options';
+    $03FE: Result := 'Quick Mask information';
+    $03FF: Result := '(Obsolete)';
+    $0400: Result := 'Layer state information';
+    $0401: Result := 'Working path (not saved)';
+    $0402: Result := 'Layers group information';
+    $0403: Result := '(Obsolete)';
+    $0404: Result := 'IPTC-NAA record';
+    $0405: Result := 'Image mode for raw format files';
+    $0406: Result := 'JPEG quality. Private';
+    $0408: Result := '(Photoshop 4.0) Grid and guides information';
+    $0409: Result := '(Photoshop 4.0) Thumbnail resource for Photoshop 4.0 only';
+    $040A: Result := '(Photoshop 4.0) Copyright flag';
+    $040B: Result := '(Photoshop 4.0) URL. Handle of a text string with uniform resource locator';
+    $040C: Result := '(Photoshop 5.0) Thumbnail resource (supersedes resource 1033)';
+    $040D: Result := '(Photoshop 5.0) Global Angle';
+    $040E: Result := '(Obsolete, Photoshop 5.0) Color samplers resource';
+    $040F: Result := '(Photoshop 5.0) ICC Profile';
+    $0410: Result := '(Photoshop 5.0) Watermark';
+    $0411: Result := '(Photoshop 5.0) ICC Untagged Profile';
+    $0412: Result := '(Photoshop 5.0) Effects visible';
+    $0413: Result := '(Photoshop 5.0) Spot Halftone';
+    $0414: Result := '(Photoshop 5.0) Document-specific IDs seed number';
+    $0415: Result := '(Photoshop 5.0) Unicode Alpha Names';
+    $0416: Result := '(Photoshop 6.0) Indexed Color Table Count';
+    $0417: Result := '(Photoshop 6.0) Transparency Index';
+    $0419: Result := '(Photoshop 6.0) Global Altitude';
+    $041A: Result := '(Photoshop 6.0) Slices';
+    $041B: Result := '(Photoshop 6.0) Workflow URL';
+    $041C: Result := '(Photoshop 6.0) Jump To XPEP';
+    $041D: Result := '(Photoshop 6.0) Alpha Identifiers';
+    $041E: Result := '(Photoshop 6.0) URL List';
+    $0421: Result := '(Photoshop 6.0) Version Info';
+    $0422: Result := '(Photoshop 7.0) EXIF data 1';
+    $0423: Result := '(Photoshop 7.0) EXIF data 3';
+    $0424: Result := '(Photoshop 7.0) XMP metadata';
+    $0425: Result := '(Photoshop 7.0) Caption digest';
+    $0426: Result := '(Photoshop 7.0) Print scale';
+    $0428: Result := '(Photoshop CS) Pixel Aspect Ratio';
+    $0429: Result := '(Photoshop CS) Layer Comps';
+    $042A: Result := '(Photoshop CS) Alternate Duotone Colors';
+    $042B: Result := '(Photoshop CS)Alternate Spot Colors';
+    $042D: Result := '(Photoshop CS2) Layer Selection ID(s)';
+    $042E: Result := '(Photoshop CS2) HDR Toning information';
+    $042F: Result := '(Photoshop CS2) Print info';
+    $0430: Result := '(Photoshop CS2) Layer Group(s) Enabled ID';
+    $0431: Result := '(Photoshop CS3) Color samplers resource';
+    $0432: Result := '(Photoshop CS3) Measurement Scale';
+    $0433: Result := '(Photoshop CS3) Timeline Information';
+    $0434: Result := '(Photoshop CS3) Sheet Disclosure';
+    $0435: Result := '(Photoshop CS3) DisplayInfo structure';
+    $0436: Result := '(Photoshop CS3) Onion Skins';
+    $0438: Result := '(Photoshop CS4) Count Information';
+    $043A: Result := '(Photoshop CS5) Print Information';
+    $043B: Result := '(Photoshop CS5) Print Style';
+    $043C: Result := '(Photoshop CS5) Macintosh NSPrintInf';
+    $043D: Result := '(Photoshop CS5) Windows DEVMODE';
+    $043E: Result := '(Photoshop CS6) Auto Save File Path';
+    $043F: Result := '(Photoshop CS6) Auto Save Format';
+    $0440: Result := '(Photoshop CC) Path Selection State';
+    $07D0..$0BB6: Result := 'Path Information (saved paths)';
+    $0BB7: Result := 'Name of clipping path';
+    $0BB8: Result := '(Photoshop CC) Origin Path Info';
+    $0FA0..$1387: Result := 'Plug-In resource(s)';
+    $1B58: Result := 'Image Ready variables';
+    $1B59: Result := 'Image Ready data sets';
+    $1B5A: Result := 'Image Ready default selected state';
+    $1B5B: Result := 'Image Ready 7 rollover expanded state';
+    $1B5C: Result := 'Image Ready rollover expanded state';
+    $1B5D: Result := 'Image Ready save layer settings';
+    $1B5E: Result := 'Image Ready version';
+    $1B40: Result := '(Photoshop CS3) Lightroom workflow';
+    $2710: Result := 'Print flags information';
+    else   Result := '(unknown)';
+  end;
+end;
+
+
 function TMainForm.GetMarkerName(AMarker: Byte; Long: Boolean): String;
 begin
   case AMarker of
@@ -2310,9 +2455,6 @@ type
   end;
   PAdobeImageResourceHeader = ^TAdobeImageResourceHeader;
 
-const
-  IPTCKey = 'Photoshop 3.0';
-  AdobeImageResourceKey = '8BIM';
 var
   i: Int64;
   s: String;
@@ -2326,14 +2468,14 @@ begin
 
   app13hdr := PAPP13Header(@FBuffer^[i])^;
   app13hdr.Size := BEToN(app13hdr.Size);
-  if not CompareMem(@app13hdr.Identifier[1], @IPTCKey[1], Length(IPTCKey)) then
+  if not CompareMem(@app13hdr.Identifier[1], @IPTC_KEY[1], Length(IPTC_KEY)) then
     exit;
 
   inc(i, SizeOf(app13hdr));
   repeat
     imgres := PAdobeImageResourceHeader(@FBuffer^[i])^;
     imgres.ID := BEtoN(imgres.ID);
-    if not CompareMem(@FBuffer^[i], @AdobeImageResourceKey[1], 4) then
+    if not CompareMem(@FBuffer^[i], @ADOBE_IMAGE_RESOURCE_KEY[1], 4) then
       exit;
     if imgres.ID = AResourceID then
       break;
@@ -3050,6 +3192,24 @@ begin
   end;
 end;
 
+
+procedure TMainForm.PopupGotoImageResourceBlock(Sender: TObject);
+var
+  id: Integer;
+  offs: Int64;
+  s: String;
+begin
+  if not (Sender is TMenuItem) then
+    exit;
+
+  s := copy(TMenuItem(Sender).Caption, 1, 5);
+  id := StrToInt(s);
+  offs := TMenuItem(Sender).Tag;
+  GotoOffset(offs);
+  DisplayAdobeImageResource(offs, id);
+end;
+
+
 procedure TMainForm.ReadArgs;
 var
   i: Integer;
@@ -3489,6 +3649,9 @@ begin
     end;
     tb := FindSegmentBtn(p^);
     if tb <> nil then tb.Enabled := true;
+    if p^ = MARKER_APP13 then
+      BuildAPP13Menu(PtrInt(p - p0 - 1));
+
     if p^ = MARKER_SOS then
       break;
     inc(p);
