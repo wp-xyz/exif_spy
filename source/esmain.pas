@@ -1230,6 +1230,8 @@ begin
   AnalysisGrid.Cells[3, j] := 'Size';
   inc(j);
   inc(AOffset, numbytes);
+
+  Result := true;
 end;
 
 function TMainForm.DisplayMarker(AOffset: Int64): Boolean;
@@ -1243,6 +1245,13 @@ begin
     MARKER_SOI   : Result := DisplayMarkerSOI(AOffset);
     MARKER_APP0  : Result := DisplayMarkerAPP0(AOffset);
     MARKER_APP1  : Result := DisplayMarkerAPP1(AOffset);
+    MARKER_APP2  : begin
+                     if GotoColorProfile('ICC_PROFILE', AOffset) then
+                     begin
+                       GotoOffset(AOffset);
+                       Result := DisplayColorProfile(AOffset);
+                     end;
+                   end;
     MARKER_APP13 : Result := DisplayMarkerAPP13(AOffset);
     MARKER_EOI   : Result := DisplayMarkerEOI(AOffset);
     MARKER_SOF0  : Result := DisplayMarkerSOF0(AOffset);
@@ -1861,7 +1870,7 @@ end;
 
 function TMainForm.FindMarker(AMarker: byte): Int64;
 var
-  p: PByte;
+  p, p0: PByte;
   pw: PWord;
   len: Integer;
 begin
@@ -1902,13 +1911,19 @@ begin
 
   Result := 2;
   p := @FBuffer^[2];
+  p0 := p;
   while (Result < FBufferSize) do begin
+    while (p^ in [$FF, 0]) do
+      inc(p);
+    dec(p);
+
     if p^ <> $FF then begin
       Result := -1;
       exit;
     end;
     inc(p);
     if p^ = AMarker then begin
+      Result := p - p0 + 1;
 //      dec(Result, 2);
       exit;
     end;
@@ -3640,6 +3655,25 @@ begin
     inc(i);
     if p - p0 >= FBufferSize then
       exit;
+
+    // Some files do not write correct segment size and fill the space to the
+    // next segment by zeros.
+    if not (p^ in [$FF, 0]) then
+      exit;
+
+    while (p^ = $FF) or (p^ = 0) do begin
+      inc(p);
+      if p - p0 >= FBufferSize then
+        exit;
+    end;
+
+    {
+    if p^ = 0 then
+    begin
+      while (p^ = 0) and (p - p0 < FBufferSize) do
+        inc(p);
+    end;
+
     if p^ <> $FF then
       exit;
     while (p^ = $FF) do begin
@@ -3647,6 +3681,7 @@ begin
       if p - p0 >= FBufferSize then
         exit;
     end;
+    }
     tb := FindSegmentBtn(p^);
     if tb <> nil then tb.Enabled := true;
     if p^ = MARKER_APP13 then

@@ -1,7 +1,7 @@
 object MainForm: TMainForm
-  Left = 336
+  Left = 280
   Height = 631
-  Top = 148
+  Top = 311
   Width = 1243
   Caption = 'EXIF spy'
   ClientHeight = 611
@@ -103,28 +103,28 @@ object MainForm: TMainForm
         Transparent = True
         object TbGotoSOI: TToolButton
           Left = 1
-          Hint = 'Go to "Start-of-image" marker (SOI)'
+          Hint = 'Go to "Start-of-image" marker'#13#10'SOI ($FFD8)'
           Top = 0
           Caption = 'SOI'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF0: TToolButton
           Left = 218
-          Hint = 'Go to "Start-of-frane" marker 0 (SOF0) / Baseline DCT'
+          Hint = 'Go to "Start-of-frame" marker 0 (SOF0)'#13#10'Baseline DCT ($FFC0)'
           Top = 0
           Caption = 'SOF0'
           OnClick = TbGotoMarker
         end
         object TbGotoAPP0: TToolButton
           Left = 32
-          Hint = 'Go to "Application marker 0" (APP0)'
+          Hint = 'Go to "Application marker 0"'#13#10'APP0 ($FFE0)'
           Top = 0
           Caption = 'APP0'
           OnClick = TbGotoMarker
         end
         object TbGotoAPP1: TToolButton
           Left = 68
-          Hint = 'Go to "Application marker 1" (APP1)'
+          Hint = 'Go to "Application marker 1"'#13#10'APP1 ($FFE1)'
           Top = 0
           Caption = 'APP1'
           DropdownMenu = APP1Popup
@@ -134,7 +134,7 @@ object MainForm: TMainForm
         end
         object TbGotoAPP2: TToolButton
           Left = 170
-          Hint = 'Go to "Application marker 2" (APP2)'
+          Hint = 'Go to "Application marker 2"'#13#10'APP2 ($FFE2)'
           Top = 0
           Caption = 'APP2'
           DropdownMenu = App2Popup
@@ -143,21 +143,21 @@ object MainForm: TMainForm
         end
         object TbGotoEOI: TToolButton
           Left = 894
-          Hint = 'Go to "End-of-image" marker (EOI)'
+          Hint = 'Go to "End-of-image" marker'#13#10'EOI ($FFD9)'
           Top = 0
           Caption = 'EOI'
           OnClick = TbGotoMarker
         end
         object TbGotoCOM: TToolButton
           Left = 793
-          Hint = 'Go to "Comment" marker (COM)'
+          Hint = 'Go to "Comment" marker'#13#10'COM $FFFE)'
           Top = 0
           Caption = 'COM'
           OnClick = TbGotoMarker
         end
         object TbGotoSOS: TToolButton
           Left = 860
-          Hint = 'Go to "Start-of-scan" marker (SOS)'
+          Hint = 'Go to "Start-of-scan" marker'#13#10'SOS ($FFDA)'
           Top = 0
           Caption = 'SOS'
           OnClick = TbGotoMarker
@@ -178,111 +178,111 @@ object MainForm: TMainForm
         end
         object TbGotoSOF1: TToolButton
           Left = 253
-          Hint = 'Go to "Start-of-frane" marker 0 (SOF0) / Extended sequential DCT'
+          Hint = 'Go to "Start-of-frame" marker 0 (SOF0)'#13#10'Extended sequential DCT ($FFC1)'
           Top = 0
           Caption = 'SOF1'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF2: TToolButton
           Left = 288
-          Hint = 'Go to "Start-of-frame 2" marker (SOF2) - Progressive DCT'
+          Hint = 'Go to "Start-of-frame 2" marker (SOF2)'#13#10'Progressive DCT ($FFC2)'
           Top = 0
           Caption = 'SOF2'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF3: TToolButton
           Left = 323
-          Hint = 'Go to to "Start-of-frame-3" marker (SOF3) - Lossless (sequential)'
+          Hint = 'Go to to "Start-of-frame-3" marker (SOF3)'#13#10'Lossless (sequential) ($FFC3)'
           Top = 0
           Caption = 'SOF3'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF5: TToolButton
           Left = 389
-          Hint = 'Go to "Start of frame 5" marker (SOF5) - Differential sequential DCT'
+          Hint = 'Go to "Start of frame 5" marker (SOF5)'#13#10'Differential sequential DCT ($FFC5)'
           Top = 0
           Caption = 'SOF5'
           OnClick = TbGotoMarker
         end
         object TbGotoDHT: TToolButton
           Left = 358
-          Hint = 'Go to "Definition of Huffman tables" marker (DHT)'
+          Hint = 'Go to "Definition of Huffman tables" marker'#13#10'DHT ($FFC4)'
           Top = 0
           Caption = 'DHT'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF6: TToolButton
           Left = 424
-          Hint = 'Go to "Start of frame-6" marker (SOF6) - Differential progressive DCT'
+          Hint = 'Go to "Start of frame-6" marker (SOF6)'#13#10'Differential progressive DCT ($FFC6)'
           Top = 0
           Caption = 'SOF6'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF7: TToolButton
           Left = 459
-          Hint = 'Go to "Start of frame 7" marker (SOF7) - Differential lossless (sequential)'
+          Hint = 'Go to "Start of frame 7" marker (SOF7)'#13#10'Differential lossless (sequential) ($FFC7)'
           Top = 0
           Caption = 'SOF7'
           OnClick = TbGotoMarker
         end
         object TbGotoJPG: TToolButton
           Left = 494
-          Hint = 'Go to "JPG extensions" marker (JPG)'
+          Hint = 'Go to "JPG extensions" marker'#13#10'JPG ($FFC8)'
           Top = 0
           Caption = 'JPG'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF9: TToolButton
           Left = 521
-          Hint = 'Go to "Start of frame 9" marker -  Extended sequential DCT'
+          Hint = 'Go to "Start of frame 9" marker '#13#10'Extended sequential DCT ($FFC9)'
           Top = 0
           Caption = 'SOF9'
         end
         object TbGotoSOF10: TToolButton
           Left = 556
-          Hint = 'Go to "Start of frame 10" marker (SOF10) - Progressive DCT'
+          Hint = 'Go to "Start of frame 10" marker (SOF10)'#13#10'Progressive DCT ($FFCA)'
           Top = 0
           Caption = 'SOF10'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF11: TToolButton
           Left = 597
-          Hint = 'Go to "Start of frame 11" marker - Lossless (sequential)'
+          Hint = 'Go to "Start of frame 11" marker'#13#10'Lossless (sequential) ($FFCB)'
           Top = 0
           Caption = 'SOF11'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF13: TToolButton
           Left = 638
-          Hint = 'Go to "Start of frame 13" marker - Differential sequential DCT'
+          Hint = 'Go to "Start of frame 13" marker'#13#10'Differential sequential DCT ($FFCD)'
           Top = 0
           Caption = 'SOF13'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF14: TToolButton
           Left = 679
-          Hint = 'Go to "Start of frame 14" marker (SOF14) - Differential progressive DCT'
+          Hint = 'Go to "Start of frame 14" marker (SOF14)'#13#10'Differential progressive DCT ($FFCE)'
           Top = 0
           Caption = 'SOF14'
           OnClick = TbGotoMarker
         end
         object TbGotoSOF15: TToolButton
           Left = 720
-          Hint = 'Go to "Start of frame 15" marker (SOF15) - Differential lossless (sequential)'
+          Hint = 'Go to "Start of frame 15" marker (SOF15)'#13#10'Differential lossless (sequential) ($FFCF)'
           Top = 0
           Caption = 'SOF15'
           OnClick = TbGotoMarker
         end
         object TbGotoDAC: TToolButton
           Left = 761
-          Hint = 'Go to "Definition of arithmetic coding" marker (DAC)'
+          Hint = 'Go to "Definition of arithmetic coding" marker'#13#10'DAC ($FFCC)'
           Top = 0
           Caption = 'DAC'
           OnClick = TbGotoMarker
         end
         object TbGotoDQT: TToolButton
           Left = 829
-          Hint = 'Go to "Definition of quantization tables" (DQT)'
+          Hint = 'Go to "Definition of quantization tables"'#13#10'DQT ($FFDB)'
           Top = 0
           Caption = 'DQT'
           OnClick = TbGotoMarker
@@ -303,6 +303,7 @@ object MainForm: TMainForm
         end
         object TbGotoAPP13: TToolButton
           Left = 116
+          Hint = 'Go to IPTC Segment'#13#10'($FFED)'
           Top = 0
           Caption = 'APP13'
           DropdownMenu = APP13Popup
@@ -545,97 +546,6 @@ object MainForm: TMainForm
   object SynXMLSyn: TSynXMLSyn
     DefaultFilter = 'XML Document (*.xml,*.xsd,*.xsl,*.xslt,*.dtd)|*.xml;*.xsd;*.xsl;*.xslt;*.dtd'
     Enabled = False
-    ElementAttri.BackPriority = 0
-    ElementAttri.ForePriority = 0
-    ElementAttri.FramePriority = 0
-    ElementAttri.BoldPriority = 0
-    ElementAttri.ItalicPriority = 0
-    ElementAttri.UnderlinePriority = 0
-    ElementAttri.StrikeOutPriority = 0
-    AttributeAttri.BackPriority = 0
-    AttributeAttri.ForePriority = 0
-    AttributeAttri.FramePriority = 0
-    AttributeAttri.BoldPriority = 0
-    AttributeAttri.ItalicPriority = 0
-    AttributeAttri.UnderlinePriority = 0
-    AttributeAttri.StrikeOutPriority = 0
-    NamespaceAttributeAttri.BackPriority = 0
-    NamespaceAttributeAttri.ForePriority = 0
-    NamespaceAttributeAttri.FramePriority = 0
-    NamespaceAttributeAttri.BoldPriority = 0
-    NamespaceAttributeAttri.ItalicPriority = 0
-    NamespaceAttributeAttri.UnderlinePriority = 0
-    NamespaceAttributeAttri.StrikeOutPriority = 0
-    AttributeValueAttri.BackPriority = 0
-    AttributeValueAttri.ForePriority = 0
-    AttributeValueAttri.FramePriority = 0
-    AttributeValueAttri.BoldPriority = 0
-    AttributeValueAttri.ItalicPriority = 0
-    AttributeValueAttri.UnderlinePriority = 0
-    AttributeValueAttri.StrikeOutPriority = 0
-    NamespaceAttributeValueAttri.BackPriority = 0
-    NamespaceAttributeValueAttri.ForePriority = 0
-    NamespaceAttributeValueAttri.FramePriority = 0
-    NamespaceAttributeValueAttri.BoldPriority = 0
-    NamespaceAttributeValueAttri.ItalicPriority = 0
-    NamespaceAttributeValueAttri.UnderlinePriority = 0
-    NamespaceAttributeValueAttri.StrikeOutPriority = 0
-    TextAttri.BackPriority = 0
-    TextAttri.ForePriority = 0
-    TextAttri.FramePriority = 0
-    TextAttri.BoldPriority = 0
-    TextAttri.ItalicPriority = 0
-    TextAttri.UnderlinePriority = 0
-    TextAttri.StrikeOutPriority = 0
-    CDATAAttri.BackPriority = 0
-    CDATAAttri.ForePriority = 0
-    CDATAAttri.FramePriority = 0
-    CDATAAttri.BoldPriority = 0
-    CDATAAttri.ItalicPriority = 0
-    CDATAAttri.UnderlinePriority = 0
-    CDATAAttri.StrikeOutPriority = 0
-    EntityRefAttri.BackPriority = 0
-    EntityRefAttri.ForePriority = 0
-    EntityRefAttri.FramePriority = 0
-    EntityRefAttri.BoldPriority = 0
-    EntityRefAttri.ItalicPriority = 0
-    EntityRefAttri.UnderlinePriority = 0
-    EntityRefAttri.StrikeOutPriority = 0
-    ProcessingInstructionAttri.BackPriority = 0
-    ProcessingInstructionAttri.ForePriority = 0
-    ProcessingInstructionAttri.FramePriority = 0
-    ProcessingInstructionAttri.BoldPriority = 0
-    ProcessingInstructionAttri.ItalicPriority = 0
-    ProcessingInstructionAttri.UnderlinePriority = 0
-    ProcessingInstructionAttri.StrikeOutPriority = 0
-    CommentAttri.BackPriority = 0
-    CommentAttri.ForePriority = 0
-    CommentAttri.FramePriority = 0
-    CommentAttri.BoldPriority = 0
-    CommentAttri.ItalicPriority = 0
-    CommentAttri.UnderlinePriority = 0
-    CommentAttri.StrikeOutPriority = 0
-    DocTypeAttri.BackPriority = 0
-    DocTypeAttri.ForePriority = 0
-    DocTypeAttri.FramePriority = 0
-    DocTypeAttri.BoldPriority = 0
-    DocTypeAttri.ItalicPriority = 0
-    DocTypeAttri.UnderlinePriority = 0
-    DocTypeAttri.StrikeOutPriority = 0
-    SpaceAttri.BackPriority = 0
-    SpaceAttri.ForePriority = 0
-    SpaceAttri.FramePriority = 0
-    SpaceAttri.BoldPriority = 0
-    SpaceAttri.ItalicPriority = 0
-    SpaceAttri.UnderlinePriority = 0
-    SpaceAttri.StrikeOutPriority = 0
-    SymbolAttri.BackPriority = 0
-    SymbolAttri.ForePriority = 0
-    SymbolAttri.FramePriority = 0
-    SymbolAttri.BoldPriority = 0
-    SymbolAttri.ItalicPriority = 0
-    SymbolAttri.UnderlinePriority = 0
-    SymbolAttri.StrikeOutPriority = 0
     WantBracesParsed = False
     Left = 152
     Top = 192
