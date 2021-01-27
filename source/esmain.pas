@@ -2568,6 +2568,11 @@ begin
     exit;
   end;
 
+  if AOffset >= FHexEditor.Datasize then begin
+    StatusMsg('Out of buffer limits.');
+    exit;
+  end;
+
   FCurrOffset := AOffset;
   FHexEditor.SelStart := AOffset;
   FHexEditor.SelEnd := AOffset;
@@ -3354,7 +3359,7 @@ begin
   offs := PDWord(@FBuffer^[p])^;
   if FMotorolaOrder then
     offs := BEToN(offs);
-  if offs = 0 then
+  if (offs = 0) or (offs > FBufferSize) then
     IFDList[Index_IFD1] := -1  // there is no IFD1
   else
     IFDList[INDEX_IFD1] := offs + tiffHeaderStart;
