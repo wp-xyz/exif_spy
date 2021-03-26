@@ -15,5 +15,4 @@ Used icons:
 - Most of the used icons are provided by icons8.com 
   ("Blue UI" icon set)
   
-- The program icon is created from the camera.png icon of icons8.com by using
-  the application Axialis IconWorkshop.
+- The program icon is created from the camera.png icon of icons8.com.
