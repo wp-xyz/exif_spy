@@ -17,7 +17,7 @@
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
       <MinorVersionNr Value="1"/>
-      <BuildNr Value="2"/>
+      <BuildNr Value="3"/>
       <StringTable InternalName="ExifSpy" LegalCopyright="(c) 2017, Werner Pamler" OriginalFilename="ExifSpy" ProductName="ExifSpy" ProductVersion="0.0.0.0"/>
     </VersionInfo>
     <BuildModes Count="1">
@@ -46,7 +46,7 @@
         <PackageName Value="LCL"/>
       </Item4>
     </RequiredPackages>
-    <Units Count="6">
+    <Units Count="3">
       <Unit0>
         <Filename Value="ExifSpy.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -60,25 +60,13 @@
         <UnitName Value="esMain"/>
       </Unit1>
       <Unit2>
-        <Filename Value="dExif\dEXIF.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit2>
-      <Unit3>
-        <Filename Value="dExif\dIPTC.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit3>
-      <Unit4>
-        <Filename Value="dExif\msData.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit4>
-      <Unit5>
         <Filename Value="esabout.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="AboutForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="esAbout"/>
-      </Unit5>
+      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

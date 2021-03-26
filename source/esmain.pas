@@ -33,6 +33,7 @@ type
     AcCfgUseFPExif: TAction;
     AcGotoIPTC: TAction;
     AcGotoICCProfile: TAction;
+    AcGotoXMP: TAction;
     ActionList: TActionList;
     cbHexAddressMode: TCheckBox;
     cbHexSingleBytes: TCheckBox;
@@ -44,6 +45,8 @@ type
     MainMenu: TMainMenu;
     MainPageControl: TPageControl;
     MenuItem1: TMenuItem;
+    MenuItem2: TMenuItem;
+    MenuItem3: TMenuItem;
     MnuIPTC: TMenuItem;
     MnuCfgUseDExif: TMenuItem;
     MnuCfg: TMenuItem;
@@ -65,9 +68,12 @@ type
     MnuInterOp: TMenuItem;
     MnuIFDSeparator1: TMenuItem;
     MnuFile: TMenuItem;
+    AnalysisNotebook: TNotebook;
     OpenDialog: TOpenDialog;
     HexPageControl: TPageControl;
     fpExifPageControl: TPageControl;
+    PgGrid: TPage;
+    PgSynEdit: TPage;
     Panel2: TPanel;
     HexPanel: TPanel;
     PgHex: TTabSheet;
@@ -85,6 +91,7 @@ type
     IPTCGridPage: TTabSheet;
     IPTCGrid: TStringGrid;
     ExifGrid: TStringGrid;
+    AnalysisSynEdit: TSynEdit;
     TbGotoSOF1: TToolButton;
     TbGotoSOF2: TToolButton;
     TbGotoSOF3: TToolButton;
@@ -103,7 +110,7 @@ type
     TbGotoDQT: TToolButton;
     MainToolBar: TToolBar;
     TbGotoAPP13: TToolButton;
-    ToolButton3: TToolButton;
+    ToolButton10: TToolButton;
     TbNextSegment: TToolButton;
     ToolButton4: TToolButton;
     ToolButton5: TToolButton;
@@ -132,6 +139,7 @@ type
     procedure AcFileReloadExecute(Sender: TObject);
     procedure AcGotoICCProfileExecute(Sender: TObject);
     procedure AcGotoIPTCExecute(Sender: TObject);
+    procedure AcGotoXMPExecute(Sender: TObject);
     procedure AcHelpAboutExecute(Sender: TObject);
     procedure AcImgFitExecute(Sender: TObject);
     procedure AnalysisGridClick(Sender: TObject);
@@ -189,11 +197,13 @@ type
     function DisplayMarkerSOI(AOffset: Int64): Boolean;
     function DisplayMarkerSOS(AOffset: Int64): Boolean;
     function DisplayTIFFHeader(AOffset: Int64): Boolean;
+    function DisplayXMP(AOffset: Int64; ALength: Integer): Boolean;
     function FindMarker(AMarker: Byte): Int64;
     function FindNextMarker(AMarker: byte; AFromPos: Int64): Int64;
     function FindNextMarker: Int64;
     function FindSegmentBtn(AMarker: Word): TToolButton;
     function FindTIFFHeader: Int64;
+    function FindXMP(out XMPLength: Integer): Int64;
     function GetBEIntValue(AOffset: Int64; AByteCount: Byte; out AValue: Int64): Boolean;
     function GetExifIntValue(AOffset: Int64; AByteCount: Byte; out AValue: Int64): Boolean;
     function GetExifValue(AOffset: Int64; ADataType, ADataSize: Integer): String;
@@ -306,6 +316,9 @@ const
   INDEX_GPS      = 3;
   INDEX_IFD1     = 4;
 
+  EXIF_KEY = 'Exif'#0#0;
+  XMP_BASE_KEY = 'http://ns.adobe.com/xap/1.0/';
+  XMP_KEY = XMP_BASE_KEY + #0;
   IPTC_KEY = 'Photoshop 3.0'#0;
   ADOBE_IMAGE_RESOURCE_KEY = '8BIM';
 
@@ -393,6 +406,18 @@ begin
     GotoOffset(offs);
     DisplayAdobeImageResource(offs, $0404);
   end;
+end;
+
+procedure TMainForm.AcGotoXMPExecute(Sender: TObject);
+var
+  offs: Int64;
+  len: Integer;
+begin
+  offs := FindXMP(len);
+  if offs = -1 then
+    exit;
+  GotoOffset(offs);
+  DisplayXMP(offs, len);
 end;
 
 procedure TMainForm.AcHelpAboutExecute(Sender: TObject);
@@ -1271,6 +1296,7 @@ begin
   Result := false;
 
   AnalysisInfo.Caption := 'APP0 (Application marker 0)';
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := 9 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -1377,7 +1403,8 @@ var
 begin
   Result := false;
 
-  AnalysisInfo.Caption := 'APP1 (Application marker 1, EXIF)';
+  AnalysisInfo.Caption := 'APP1 (Application marker 1, EXIF/XMP)';
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := 3 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -1401,15 +1428,32 @@ begin
   inc(j);
   inc(AOffset, numbytes);
 
-  numbytes := 6;
+  numbytes := Length(EXIF_KEY);
   SetLength(s, numbytes);
   Move(FBuffer^[AOffset], s[1], numbytes);
-  AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
-  AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
-  AnalysisGrid.Cells[2, j] := s;
-  AnalysisGrid.Cells[3, j] := 'EXIF identifer';
-  inc(j);
-  inc(AOffset, numbytes);
+  if (s = EXIF_KEY) then
+  begin
+    AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+    AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+    AnalysisGrid.Cells[2, j] := s;
+    AnalysisGrid.Cells[3, j] := 'EXIF identifer';
+    inc(j);
+    inc(AOffset, numbytes);
+  end else
+  begin
+    numbytes := Length(XMP_KEY);
+    SetLength(s, numbytes);
+    Move(FBuffer^[AOffset], s[1], numbytes);
+    if s = XMP_KEY then
+    begin
+      AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
+      AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
+      AnalysisGrid.Cells[2, j] := s;
+      AnalysisGrid.Cells[3, j] := 'XMP identifer';
+      inc(j);
+      inc(AOffset, numbytes);
+    end;
+  end;
 
   Result := true;
 end;
@@ -1425,6 +1469,7 @@ begin
   Result := false;
 
   AnalysisInfo.Caption := 'APP13 (Application marker 13, IPTC)';
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := 3 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -1484,6 +1529,7 @@ begin
     exit;
 
   AnalysisInfo.Caption := AInfo;
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := AnalysisGrid.FixedRows + n*4 + 2;
 
   j := AnalysisGrid.FixedRows;
@@ -1615,6 +1661,7 @@ begin
   Result := false;
 
   AnalysisInfo.Caption := 'COM (Comment)';
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := 3 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -1658,6 +1705,8 @@ begin
   Result := false;
 
   AnalysisInfo.Caption := 'EOI (End of image)';
+
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := 1 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -1683,6 +1732,7 @@ begin
   Result := false;
 
   AnalysisInfo.Caption := 'SOF0 (Start of frame 0)';
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := 6 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -1760,6 +1810,7 @@ begin
 
   tiffHdr := AOffset;
   AnalysisInfo.Caption := 'TIFF header';
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := AnalysisGrid.FixedRows + 3;
   j := AnalysisGrid.FixedRows;
 
@@ -1802,6 +1853,7 @@ begin
   Result := false;
 
   AnalysisInfo.Caption := 'SOI (Start of image)';
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := 1 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -1828,6 +1880,7 @@ begin
   Result := false;
 
   AnalysisInfo.Caption := 'SOS (Start of scan)';
+  AnalysisNotebook.PageIndex := 0;
   AnalysisGrid.RowCount := 2 + AnalysisGrid.FixedRows;
   j := AnalysisGrid.FixedRows;
 
@@ -1850,6 +1903,26 @@ begin
   AnalysisGrid.Cells[3, j] := 'Size';
   inc(j);
   inc(AOffset, numbytes);
+
+  Result := true;
+end;
+
+
+function TMainForm.DisplayXMP(AOffset: Int64; ALength: Integer): Boolean;
+var
+  j: Integer;
+  s: String;
+begin
+  Result := false;
+  AnalysisInfo.Caption := 'XMP meta data';
+  AnalysisNotebook.PageIndex := 1;
+
+  if (AOffset + ALength >= FBufferSize) then
+    exit;
+
+  SetLength(s, ALength);
+  Move(FBuffer^[AOffset], s[1], ALength);
+  AnalysisSynEdit.Lines.Text := s;
 
   Result := true;
 end;
@@ -1995,6 +2068,32 @@ begin
     end else begin
       Result := FindNextMarker(Marker_APP1, Result+1);
       if Result > 0 then
+        exit;
+    end;
+  end;
+end;
+
+function TMainForm.FindXMP(out XMPLength: Integer): Int64;
+var
+  p: PByte;
+begin
+  XMPLength := -1;
+  Result := FindMarker(MARKER_APP1);
+  if Result = -1 then
+    exit;
+  while Result < FBufferSize do begin
+    p := @FBuffer^[Result];
+    inc(p, 4);
+    if PChar(p) = XMP_BASE_KEY then
+    begin
+      dec(p, 2);
+      XMPLength := BEToN(PWord(p)^) - 2 - Length(XMP_KEY);
+      inc(Result, 2 + 2 + Length(XMP_KEY));
+      exit;
+    end else
+    begin
+      Result := FindNextMarker(MARKER_APP1, Result+1);
+      if Result = -1 then
         exit;
     end;
   end;
@@ -2616,6 +2715,7 @@ begin
     inc(AOffset, 2 + 2 + 4 + 4);
   end;
 end;
+
 
 procedure TMainForm.HexEditorClick(Sender: TObject);
 begin
@@ -3672,35 +3772,30 @@ begin
         exit;
     end;
 
-    {
-    if p^ = 0 then
-    begin
-      while (p^ = 0) and (p - p0 < FBufferSize) do
-        inc(p);
-    end;
-
-    if p^ <> $FF then
-      exit;
-    while (p^ = $FF) do begin
-      inc(p);
-      if p - p0 >= FBufferSize then
-        exit;
-    end;
-    }
     tb := FindSegmentBtn(p^);
     if tb <> nil then tb.Enabled := true;
+
+    if (p^ = MARKER_APP1) then
+    begin
+      if StrComp(PChar(p+3), PChar(XMP_KEY)) = 0 then
+        AcGotoXMP.Enabled := true;
+    end;
+
     if p^ = MARKER_APP13 then
       BuildAPP13Menu(PtrInt(p - p0 - 1));
 
     if p^ = MARKER_SOS then
       break;
+
     inc(p);
     if p - p0 >= FBufferSize-1 then
       exit;
+
     pw := PWord(p);
     len := BEToN(pw^);
     inc(p, len);
   end;
+
   while true do begin
     if p - p0 >= FBufferSize-1 then
       exit;
