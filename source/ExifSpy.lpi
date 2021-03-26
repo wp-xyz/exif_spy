@@ -16,9 +16,9 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
-      <MinorVersionNr Value="1"/>
+      <MinorVersionNr Value="2"/>
       <BuildNr Value="3"/>
-      <StringTable InternalName="ExifSpy" LegalCopyright="(c) 2017, Werner Pamler" OriginalFilename="ExifSpy" ProductName="ExifSpy" ProductVersion="0.0.0.0"/>
+      <StringTable InternalName="ExifSpy" LegalCopyright="(c) 2017-2021, Werner Pamler" OriginalFilename="ExifSpy" ProductName="ExifSpy" ProductVersion="0.0.0.0"/>
     </VersionInfo>
     <BuildModes Count="1">
       <Item1 Name="Default" Default="True"/>

@@ -35,7 +35,7 @@ implementation
 {$R *.lfm}
 
 uses
-  resource, versiontypes, versionresource, LCLIntf;
+  Types, resource, versiontypes, versionresource, LCLIntf;
 
 const
   LE = LineEnding;
@@ -48,7 +48,7 @@ const
     '  <style type="text/css">' + LE +
     '    body {background-color:ffffff;}' + LE +
     '    h3{color:003366;}' + LE +
-    '    li{font-size:9pt}' + LE +
+    '    li{font-size:12pt}' + LE +
     '  </style>' + LE +
     '<body>' + LE +
     '  <h3>Compiler and libaries:</h3>' + LE +
@@ -59,7 +59,7 @@ const
     '  </ul>' + LE +
     '  <h3>Icons:</h3>' + LE +
     '  <ul>' + LE +
-    '    <li><a href="https://icons8.com/icon/">icons8</a></li>' + LE +
+    '    <li><a href="https://icons8.com/icon/">icons8 (Blue UI style)</a></li>' + LE +
     '  </ul>' + LE +
     '</body>' + LE +
     '</html>';
@@ -104,7 +104,7 @@ procedure TAboutForm.FormCreate(Sender: TObject);
 begin
   HTMLPanel.SetHtmlFromStr(HTMLStr);
   IconImage.Picture.Icon := Application.Icon;
-  IconImage.Picture.Icon.Current := 2;
+  IconImage.Picture.Icon.Current := IconImage.Picture.Icon.GetBestIndexForSize(Size(IconImage.Width, IconImage.Height));
   LblTitle.Caption := 'EXIF Spy ' + ResourceVersionInfo;
 end;
 

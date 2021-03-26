@@ -1,53 +1,75 @@
 object AboutForm: TAboutForm
   Left = 604
-  Height = 377
+  Height = 400
   Top = 344
   Width = 453
   BorderStyle = bsDialog
   Caption = 'About Clipboard Explorer'
-  ClientHeight = 377
+  ClientHeight = 400
   ClientWidth = 453
   OnCreate = FormCreate
-  LCLVersion = '1.9.0.0'
+  LCLVersion = '2.1.0.0'
   object IconImage: TImage
-    Left = 9
-    Height = 64
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    Left = 8
+    Height = 128
     Top = 8
-    Width = 64
+    Width = 128
+    BorderSpacing.Left = 8
+    BorderSpacing.Top = 8
   end
   object LblTitle: TLabel
-    Left = 88
-    Height = 37
-    Top = 7
-    Width = 110
+    AnchorSideLeft.Control = IconImage
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = IconImage
+    Left = 160
+    Height = 45
+    Top = 8
+    Width = 130
+    BorderSpacing.Left = 24
     Caption = 'EXIF Spy'
-    Font.Height = -27
+    Font.Height = -32
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
   end
   object LblCopyright: TLabel
-    Left = 88
+    AnchorSideLeft.Control = LblTitle
+    AnchorSideTop.Control = LblTitle
+    AnchorSideTop.Side = asrBottom
+    Left = 160
     Height = 15
-    Top = 44
-    Width = 125
-    Caption = '(c) 2017, Werner Pamler'
+    Top = 53
+    Width = 154
+    Caption = '(c) 2017-2021, Werner Pamler'
     ParentColor = False
   end
   object Label3: TLabel
-    Left = 9
+    AnchorSideLeft.Control = IconImage
+    AnchorSideTop.Control = IconImage
+    AnchorSideTop.Side = asrBottom
+    Left = 8
     Height = 15
-    Top = 88
+    Top = 144
     Width = 40
+    BorderSpacing.Top = 8
+    BorderSpacing.Bottom = 4
     Caption = 'Credits:'
     ParentColor = False
   end
   object Button1: TButton
-    Left = 367
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 370
     Height = 25
-    Top = 340
+    Top = 367
     Width = 75
     Anchors = [akRight, akBottom]
+    BorderSpacing.Right = 8
+    BorderSpacing.Bottom = 8
     Cancel = True
     Caption = 'Close'
     Default = True
@@ -55,11 +77,22 @@ object AboutForm: TAboutForm
     TabOrder = 0
   end
   object HtmlPanel: TIpHtmlPanel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Label3
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Button1
     Left = 8
-    Height = 229
-    Top = 104
-    Width = 433
+    Height = 196
+    Top = 163
+    Width = 437
     Anchors = [akTop, akLeft, akRight, akBottom]
+    BgColor = clWindow
+    BorderSpacing.Left = 8
+    BorderSpacing.Right = 8
+    BorderSpacing.Bottom = 8
+    BorderStyle = bsSingle
     FixedTypeface = 'Courier New'
     DefaultTypeFace = 'default'
     DefaultFontSize = 12

@@ -40,8 +40,6 @@ type
     Image: TImage;
     ImageList: TImageList;
     AnalysisInfo: TLabel;
-    ImageList1: TImageList;
-    Images24: TImageList;
     MainMenu: TMainMenu;
     MainPageControl: TPageControl;
     MenuItem1: TMenuItem;
