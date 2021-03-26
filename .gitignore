@@ -1,3 +1,7 @@
+# exifspy project specific
+/bin
+/ppu
+
 # Lazarus compiler-generated binaries (safe to delete)
 *.exe
 *.dll
