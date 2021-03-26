@@ -12,7 +12,8 @@ This folder contains the following third-party components used by ExifSpy:
   
 Used icons:
 
-- Most of the used icons are provided by www.icons8.com 
-  ("Simple small" icon set)
+- Most of the used icons are provided by icons8.com 
+  ("Blue UI" icon set)
   
-- The program icon is self-drawn using Inkscape.
+- The program icon is created from the camera.png icon of icons8.com by using
+  the application Axialis IconWorkshop.
