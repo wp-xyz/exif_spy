@@ -177,6 +177,7 @@ type
     FHexEditor: TMPHexEditor;
     FLoadFPExif: Boolean;
     procedure BuildAPP13Menu(AOffset: Int64);
+    procedure ClearAnalysis;
     procedure DisableAllBtns;
     function DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
     function DisplayColorProfile(AOffset: Int64): Boolean;
@@ -497,7 +498,7 @@ end;
 
 procedure TMainForm.BuildApp13Menu(AOffset: Int64);
 var
-  s: String;
+  s: String = '';
   numBytes: Integer;
   n: Int64;
   item: TMenuItem;
@@ -571,11 +572,19 @@ begin
 end;
 
 
+procedure TMainForm.ClearAnalysis;
+begin
+  AnalysisInfo.Caption := ' ';
+  AnalysisGrid.RowCount := 2;
+  AnalysisGrid.Rows[1].Clear;
+  AnalysisSynEdit.Lines.Clear;
+end;
+
 function TMainForm.DisplayAdobeImageResource(AOffset: Int64; AID: Word): Boolean;
 var
   numbytes: Integer;
   s: String = '';
-  j, i: Integer;
+  j: Integer;
   size: Integer;
   val: Int64;
   itemCounter: Integer;
@@ -739,7 +748,7 @@ var
   val: Int64;
   s: String = '';
   dt: TICCDateTime;
-  dw: DWord;
+  dw: DWord = 0;
   numTags: Integer;
 begin
   Result := false;
@@ -1908,8 +1917,7 @@ end;
 
 function TMainForm.DisplayXMP(AOffset: Int64; ALength: Integer): Boolean;
 var
-  j: Integer;
-  s: String;
+  s: String = '';
 begin
   Result := false;
   AnalysisInfo.Caption := 'XMP meta data';
@@ -2255,10 +2263,9 @@ end;
 function TMainForm.GetExifIntValue(AOffset: Int64; AByteCount: Byte;
   out AValue: Int64): Boolean;
 var
-  b: Byte;
-  w: Word;
-  dw: DWord;
-  qw: Int64;
+  b: Byte = 0;
+  w: Word = 0;
+  dw: DWord = 0;
 begin
   Result := false;
   if AOffset - AByteCount >= FBufferSize then
@@ -2569,7 +2576,6 @@ type
 
 var
   i: Int64;
-  s: String;
   app13hdr: TAPP13Header;
   imgres: TAdobeImageResourceHeader;
   size: DWord;
@@ -2595,7 +2601,7 @@ begin
     if odd(imgres.NameLen) then
       inc(i, imgres.NameLen)
     else
-      inc(i, imgres.NameLen + 1);
+      {%H-}inc(i, imgres.NameLen + 1);
     size := BEToN(PDWord(@FBuffer^[i])^);
     inc(i, size);
   until false;
@@ -2784,9 +2790,6 @@ end;
 
 procedure TMainForm.LoadFile(const AFileName: String);
 var
-  i, j: Integer;
-//  t: TTagEntry;
-  L: TStringList;
   crs: TCursor;
 begin
   Statusbar.Panels[PANEL_ENDIAN].Text := '';
@@ -2810,6 +2813,7 @@ begin
   crs := Screen.Cursor;
   Screen.Cursor := crHourglass;
   try
+    FBuffer := nil;
     FHexEditor.LoadFromFile(aFileName);
     FBuffer := PBytes(TMPHexEditorOpener(FHexEditor).DataStorage.Memory);
     FBufferSize := FHexEditor.DataSize;
@@ -2819,6 +2823,7 @@ begin
     if ScanIFDs then
       UpdateIFDs;
     UpdateMarkers;
+    ClearAnalysis;
 
     FreeAndNil(FImgInfo);
     if FLoadFpExif then begin
@@ -2826,40 +2831,11 @@ begin
       FImgInfo.LoadFromFile(AFileName);
       Populate_fpExifGrids;
     end;
-                   (*
-    FreeAndNil(FImgData);
-    if FLoadDExif then begin
-      FImgData := TImgData.Create;
-      FImgData.ProcessFile(AFileName);
-      FMotorolaOrder := FImgData.MotorolaOrder;
-      if FMotorolaOrder then
-        Statusbar.Panels[PANEL_ENDIAN].Text := 'Big endian' else
-        Statusbar.Panels[PANEL_ENDIAN].Text := 'Little endian';
-      FWidth := FImgData.Width;
-      FHeight := FImgData.Height;
-      if FImgData.HasExif then
-        FImgData.ExifObj.ProcessThumbnail;
-      if FImgData.HasIPTC then
-        FImgData.IPTCObj.ParseIPTCArray;
-      Populate_dExifGrid(0);
-      Populate_dExifGrid(1);
-      Populate_dExifGrid(2);
-
-      L := FImgData.MetadataToXML;
-      try
-        XML_SynEdit.Lines.Assign(L);
-      finally
-        L.Free;
-      end;
-    end;
-    PgDExif.TabVisible := FLoadDExif;
-    *)
 
     Image.Picture.LoadFromFile(AFileName);
     Image.Width := FWidth;
     Image.Height := FHeight;
     AcImgFitExecute(nil);
-
 
   finally
     Screen.Cursor := crs;
@@ -3096,8 +3072,8 @@ var
   rat: TRational absolute buf;
   idx: Integer;
   i, j: Integer;
-  s: String;
-  sw: WideString;
+  s: String = '';
+  sw: WideString = '';
   ls: SizeInt;
   pw: PWideChar;
   pa: PAnsiChar;
@@ -3110,7 +3086,8 @@ begin
   ValueGrid.Cells[1, ROW_INDEX] := IntToStr(idx);
 
   // Byte, ShortInt
-  if idx <= FBufferSize - SizeOf(byte) then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx <= FBufferSize - SizeOf(byte)) then
+  begin
     ValueGrid.Cells[1, ROW_BITS] := IntToBin(FBuffer^[idx], 8);
     ValueGrid.Cells[2, ROW_BITS] := Format('%d ... %d (%d)', [idx, idx, SizeOf(byte)]);
     ValueGrid.Cells[1, ROW_BYTE] := IntToStr(FBuffer^[idx]);
@@ -3126,7 +3103,7 @@ begin
   end;
 
   // Word, SmallInt
-  if idx <= FBufferSize - SizeOf(word) then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx <= FBufferSize - SizeOf(word)) then begin
     buf[0] := FBuffer^[idx];
     buf[1] := FBuffer^[idx+1];
     ValueGrid.Cells[1, ROW_WORD] := IntToStr(LEToN(w));
@@ -3149,7 +3126,7 @@ begin
   end;
 
   // DWord, LongInt
-  if idx <= FBufferSize - SizeOf(DWord) then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx <= FBufferSize - SizeOf(DWord)) then begin
     for i:=0 to SizeOf(DWord)-1 do buf[i] :=
       FBuffer^[idx+i];
     ValueGrid.Cells[1, ROW_DWORD] := IntToStr(LEToN(dw));
@@ -3172,7 +3149,7 @@ begin
   end;
 
   // Rational
-  if idx <= FBufferSize - SizeOf(TRational) then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx <= FBufferSize - SizeOf(TRational)) then begin
     for i:=0 to SizeOf(TRational) do
       buf[i] := FBuffer^[idx+i];
     ValueGrid.Cells[1, ROW_RATIONAL64] := Format('%d/%d', [rat.num, rat.denom]);
@@ -3187,7 +3164,7 @@ begin
   end;
 
   // QWord, Int64
-  if idx <= FBufferSize - SizeOf(QWord) then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx <= FBufferSize - SizeOf(QWord)) then begin
     for i:=0 to SizeOf(QWord)-1 do
       buf[i] := FBuffer^[idx+i];
     ValueGrid.Cells[1, ROW_QWORD] := Format('%d', [qw]);
@@ -3210,7 +3187,7 @@ begin
   end;
 
   // Single
-  if idx <= FBufferSize - SizeOf(single) then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx <= FBufferSize - SizeOf(single)) then begin
     for i:=0 to SizeOf(single)-1 do buf[i] := FBuffer^[idx+i];
     ValueGrid.Cells[1, ROW_SINGLE] := Format('%f', [sng]);
     ValueGrid.Cells[2, ROW_SINGLE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Single)-1, SizeOf(Single)]);
@@ -3220,7 +3197,7 @@ begin
   end;
 
   // Double
-  if idx <= FBufferSize - SizeOf(double) then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx <= FBufferSize - SizeOf(double)) then begin
     for i:=0 to SizeOf(double)-1 do buf[i] := FBuffer^[idx+i];
     ValueGrid.Cells[1, ROW_DOUBLE] := Format('%f', [dbl]);
     ValueGrid.Cells[2, ROW_DOUBLE] := Format('%d ... %d (%d)', [idx, idx+SizeOf(Double)-1, SizeOf(Double)]);
@@ -3230,7 +3207,7 @@ begin
   end;
 
   // AnsiString
-  if idx < FBufferSize then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx < FBufferSize) then begin
     ls := Min(FBuffer^[idx], FBufferSize - idx - 1);
     SetLength(s, ls);
     i := idx + 1;
@@ -3250,7 +3227,7 @@ begin
 
   // PAnsiChar
   // Avoid buffer overrun
-  if idx < FBufferSize then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx < FBufferSize) then begin
     pa := PAnsiChar(@FBuffer^[idx]);
     ls := 0;
     while (pa^ <> #0) and (idx < FBufferSize) and (ls < MAX_LEN) do //pa - @FBuffer[0] < FBufferSize) do
@@ -3269,7 +3246,7 @@ begin
   end;
 
   // WideString
-  if idx < FBufferSize then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx < FBufferSize) then begin
     ls := Min(FBuffer^[idx], (FBufferSize - idx - 1) div SizeOf(WideChar));
     if ls > MAX_LEN then ls := MAX_LEN;
     SetLength(sw, ls);
@@ -3292,7 +3269,7 @@ begin
 
   // PWideChar
   // Avoid buffer overrun
-  if idx < FBufferSize then begin
+  if (FBuffer <> nil) and (idx >= 0) and (idx < FBufferSize) then begin
     pw := PWideChar(@FBuffer^[idx]);
     ls := 0;
     while (pw^ <> #0) and (pw - @FBuffer^[0] < FBufferSize-1) and (ls < MAX_LEN) do
@@ -3351,8 +3328,6 @@ var
   ini: TCustomIniFile;
   W, H, L, T: Integer;
   Rct: TRect;
-  i: Integer;
-  s: String;
 begin
   ini := TMemIniFile.Create(CalcIniName);
   try
@@ -3437,7 +3412,7 @@ var
   offs: DWord;
 begin
   Result := false;
-  FillChar(IFDList[0], SizeOf(IFDList), -1);
+  FillChar(IFDList[0], SizeOf(IFDList), $FF);
 
   tiffHeaderStart := FindTiffHeader;
   if tiffHeaderStart = -1 then
@@ -3714,6 +3689,7 @@ begin
     tb := HexToolbar.Buttons[i];
     if tb.Tag >= $C0 then tb.Enabled := false;
   end;
+  AcGotoXMP.Enabled := false;
 end;
 
 function TMainForm.FindSegmentBtn(AMarker: Word): TToolButton;
