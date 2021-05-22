@@ -16,6 +16,12 @@ type
   TBytes = array[0..MaxInt div SizeOf(Byte) - 1] of Byte;
   PBytes = ^TBytes;
 
+  THexEditor = class(TMPHexEditor)
+  public
+    property DataStorage;
+  end;
+
+
   { TMainForm }
 
   TMainForm = class(TForm)
@@ -174,7 +180,7 @@ type
     IFDList: array[0..4] of Int64;
     FCurrIFDIndex: Integer;
     FMRUMenuManager : TMRUMenuManager;
-    FHexEditor: TMPHexEditor;
+    FHexEditor: THexEditor;
     FLoadFPExif: Boolean;
     procedure BuildAPP13Menu(AOffset: Int64);
     procedure ClearAnalysis;
@@ -326,8 +332,6 @@ const
 var
   MaxHistory: Integer = 16;
 
-type
-  TMPHexEditorOpener = class(TMPHexEditor);
 
 function GetFixedFontName: String;
 var
@@ -2156,7 +2160,7 @@ begin
     OnRecentFile := @MRUMenuManagerRecentFile;
   end;
 
-  FHexEditor := TMPHexEditor.Create(self);
+  FHexEditor := THexEditor.Create(self);
   with FHexEditor do
   begin
     Parent := PgHex;
@@ -2815,7 +2819,7 @@ begin
   try
     FBuffer := nil;
     FHexEditor.LoadFromFile(aFileName);
-    FBuffer := PBytes(TMPHexEditorOpener(FHexEditor).DataStorage.Memory);
+    FBuffer := PBytes(FHexEditor.DataStorage.Memory);
     FBufferSize := FHexEditor.DataSize;
     FCurrOffset := 0;
     HexEditorClick(nil);
@@ -3069,7 +3073,8 @@ var
   qw: QWord absolute buf;
   dbl: double absolute buf;
   sng: single absolute buf;
-  rat: TRational absolute buf;
+//  rat: TRational absolute buf;
+  rat: TRational;
   idx: Integer;
   i, j: Integer;
   s: String = '';
@@ -3127,8 +3132,8 @@ begin
 
   // DWord, LongInt
   if (FBuffer <> nil) and (idx >= 0) and (idx <= FBufferSize - SizeOf(DWord)) then begin
-    for i:=0 to SizeOf(DWord)-1 do buf[i] :=
-      FBuffer^[idx+i];
+    for i:=0 to SizeOf(DWord)-1 do
+      buf[i] := FBuffer^[idx+i];
     ValueGrid.Cells[1, ROW_DWORD] := IntToStr(LEToN(dw));
     ValueGrid.Cells[2, ROW_DWORD] := Format('%d ... %d (%d)', [idx, idx+SizeOf(DWord)-1, SizeOf(DWord)]);
     ValueGrid.Cells[1, ROW_LONGINT] := IntToStr(LongInt(LEToN(dw)));
@@ -3150,11 +3155,10 @@ begin
 
   // Rational
   if (FBuffer <> nil) and (idx >= 0) and (idx <= FBufferSize - SizeOf(TRational)) then begin
-    for i:=0 to SizeOf(TRational) do
-      buf[i] := FBuffer^[idx+i];
-    ValueGrid.Cells[1, ROW_RATIONAL64] := Format('%d/%d', [rat.num, rat.denom]);
+    Move(FBuffer^[idx], rat, SizeOf(TRational));
+    ValueGrid.Cells[1, ROW_RATIONAL64] := Format('%d/%d', [Int64(rat.num), Int64(rat.denom)]);
     ValueGrid.Cells[2, ROW_RATIONAL64] := Format('%d ... %d (%d)', [idx, idx + Sizeof(TRational)-1, SizeOf(TRational)]);
-    ValueGrid.Cells[1, ROW_RATIONAL64_BE] := Format('%d/%d', [BEtoN(rat.num), BEtoN(rat.denom)]);
+    ValueGrid.Cells[1, ROW_RATIONAL64_BE] := Format('%d/%d', [BEtoN(LongInt(rat.num)), BEtoN(LongInt(rat.denom))]);
     ValueGrid.Cells[2, ROW_RATIONAL64_BE] := Format('%d ... %d (%d)', [idx, idx + Sizeof(TRational)-1, SizeOf(TRational)]);
   end else begin
     ValueGrid.Cells[1, ROW_RATIONAL64] := '';
@@ -3368,6 +3372,7 @@ var
     i: Integer;
     TagID: Word;
     val: DWord;
+    tagType: Word;
   begin
     if FBuffer = nil then
       exit;
@@ -3385,8 +3390,15 @@ var
       TagID := PWord(@FBuffer^[p])^;
       if FMotorolaOrder then TagID := BEToN(TagID);
       inc(p, 2);  // --> go to Type field
+      tagType := PWord(@FBuffer^[p])^;
       inc(p, 2);  // --> go to Size field
       inc(p, 4);  // --> go to Value field
+      // Some defective files have TagID=0 and tagType=0 --> skip
+      if (TagID = 0) and (tagType = 0) then
+      begin
+        inc(p, 4);
+        Continue;
+      end;
       // Read the data value assigned to the tag
       val := PDWord(@FBuffer^[p])^;
       if FMotorolaOrder then val := BEToN(val);

@@ -354,7 +354,7 @@ object MainForm: TMainForm
               Height = 429
               Top = 21
               Width = 985
-              PageIndex = 1
+              PageIndex = 0
               Align = alClient
               TabOrder = 0
               object PgGrid: TPage
@@ -362,7 +362,7 @@ object MainForm: TMainForm
                   Left = 0
                   Height = 429
                   Top = 0
-                  Width = 1214
+                  Width = 985
                   Align = alClient
                   ColCount = 4
                   FixedCols = 0
@@ -405,6 +405,7 @@ object MainForm: TMainForm
                   Font.Height = -13
                   Font.Name = 'Courier New'
                   Font.Pitch = fpFixed
+                  Font.Quality = fqNonAntialiased
                   ParentColor = False
                   ParentFont = False
                   TabOrder = 0
@@ -917,8 +918,8 @@ object MainForm: TMainForm
               OnClick = ValueGridClick
               ColWidths = (
                 64
-                458
-                459
+                450
+                450
               )
             end
           end
@@ -961,12 +962,12 @@ object MainForm: TMainForm
     object fpExifPage: TTabSheet
       Caption = 'fpExif'
       ClientHeight = 543
-      ClientWidth = 1227
+      ClientWidth = 998
       object fpExifPageControl: TPageControl
         Left = 0
         Height = 543
         Top = 0
-        Width = 1227
+        Width = 998
         ActivePage = fpExifGridPage
         Align = alClient
         TabIndex = 0
@@ -974,12 +975,12 @@ object MainForm: TMainForm
         object fpExifGridPage: TTabSheet
           Caption = 'EXIF tags'
           ClientHeight = 515
-          ClientWidth = 1219
+          ClientWidth = 990
           object ExifGrid: TStringGrid
             Left = 0
             Height = 515
             Top = 0
-            Width = 1219
+            Width = 990
             Align = alClient
             MouseWheelOption = mwGrid
             Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goDrawFocusSelected, goColSizing, goThumbTracking, goSmoothScroll]
@@ -990,12 +991,12 @@ object MainForm: TMainForm
         object IPTCGridPage: TTabSheet
           Caption = 'IPTC tags'
           ClientHeight = 515
-          ClientWidth = 1219
+          ClientWidth = 990
           object IPTCGrid: TStringGrid
             Left = 0
             Height = 515
             Top = 0
-            Width = 1219
+            Width = 990
             Align = alClient
             MouseWheelOption = mwGrid
             Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goDrawFocusSelected, goColSizing, goThumbTracking, goSmoothScroll]
