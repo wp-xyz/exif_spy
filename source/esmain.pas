@@ -153,6 +153,7 @@ type
     procedure cbHexSingleBytesChange(Sender: TObject);
     procedure ExifGridCompareCells(Sender: TObject; ACol, ARow, BCol,
       BRow: Integer; var Result: integer);
+    procedure FormActivate(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDeactivate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -182,6 +183,7 @@ type
     FMRUMenuManager : TMRUMenuManager;
     FHexEditor: THexEditor;
     FLoadFPExif: Boolean;
+    FActivated: Boolean;
     procedure BuildAPP13Menu(AOffset: Int64);
     procedure ClearAnalysis;
     procedure DisableAllBtns;
@@ -495,7 +497,6 @@ end;
 
 procedure TMainForm.BeforeRun;
 begin
-  ReadFromIni;
   ReadArgs;
 end;
 
@@ -1948,6 +1949,15 @@ begin
   Result := CompareText(sA, sB);
   if ExifGrid.SortOrder = soDescending then
     Result := -Result;
+end;
+
+procedure TMainForm.FormActivate(Sender: TObject);
+begin
+  if not FActivated then
+  begin
+    FActivated := true;
+    ReadFromIni;
+  end;
 end;
 
 

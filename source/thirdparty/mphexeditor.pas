@@ -1933,6 +1933,8 @@ resourcestring
   MPH_UC_BE_S = 'UCBE';
 
 const
+  INVALID_HANDLE_VALUE = -1;
+
   // long descriptions of the different translations (e.g. for menues)
   MPHTranslationDesc: array[TMPHTranslationKind] of string = (MPH_TK_ASIS,
     MPH_TK_DOS8, MPH_TK_ASCII7, MPH_TK_MAC,

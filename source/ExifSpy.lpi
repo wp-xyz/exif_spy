@@ -9,8 +9,12 @@
       </Flags>
       <SessionStorage Value="InProjectDir"/>
       <Title Value="ExifSpy"/>
+      <Scaled Value="True"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
+      <XPManifest>
+        <DpiAware Value="True"/>
+      </XPManifest>
       <Icon Value="0"/>
     </General>
     <VersionInfo>

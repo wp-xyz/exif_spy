@@ -294,7 +294,7 @@ begin
   For I:=1 to Count do
     begin
     FN:=Ini.ReadString(ASection,Format(KeyFile,[i]),'');
-    If (FN<>'') then
+    If (FN<>'') and FileExists(FN) then
       FRecent.Add(FN);
     end;
 end;

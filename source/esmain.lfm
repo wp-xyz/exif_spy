@@ -7,11 +7,12 @@ object MainForm: TMainForm
   ClientHeight = 631
   ClientWidth = 1014
   Menu = MainMenu
+  OnActivate = FormActivate
   OnCreate = FormCreate
   OnDeactivate = FormDeactivate
   OnDestroy = FormDestroy
   ShowHint = True
-  LCLVersion = '2.3.0.0'
+  LCLVersion = '3.99.0.0'
   object MainPageControl: TPageControl
     Left = 4
     Height = 591
@@ -321,6 +322,7 @@ object MainForm: TMainForm
         ClientHeight = 498
         ClientWidth = 993
         Color = clForm
+        ParentBackground = False
         ParentColor = False
         TabOrder = 4
         object HexPageControl: TPageControl
@@ -344,7 +346,6 @@ object MainForm: TMainForm
               Align = alTop
               BorderSpacing.Bottom = 4
               Caption = '     '
-              Color = clDefault
               Font.Height = -13
               Font.Style = [fsBold]
               ParentColor = False
@@ -919,8 +920,8 @@ object MainForm: TMainForm
               OnClick = ValueGridClick
               ColWidths = (
                 64
-                459
-                458
+                450
+                450
               )
             end
           end
