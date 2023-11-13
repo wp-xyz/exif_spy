@@ -3443,7 +3443,9 @@ begin
   FMotorolaOrder := (PByte(@FBuffer^[tiffHeaderStart])^ = ord('M')) and
                     (PByte(@FBuffer^[tiffHeaderStart+1])^ = ord('M'));
 
-  offs := PWord(@FBuffer^[tiffHeaderStart+4])^;
+  offs := PDWord(@FBuffer^[tiffHeaderStart+4])^;
+  if FMotorolaOrder then
+    offs := BEToN(offs);
 
   IFDList[0] := tiffHeaderStart + offs;
   ScanIFD(IFDList[0]);

@@ -7,12 +7,12 @@ object MainForm: TMainForm
   ClientHeight = 631
   ClientWidth = 1014
   Menu = MainMenu
+  ShowHint = True
+  LCLVersion = '3.99.0.0'
   OnActivate = FormActivate
   OnCreate = FormCreate
   OnDeactivate = FormDeactivate
   OnDestroy = FormDestroy
-  ShowHint = True
-  LCLVersion = '3.99.0.0'
   object MainPageControl: TPageControl
     Left = 4
     Height = 591
@@ -47,8 +47,8 @@ object MainForm: TMainForm
           Top = 0
           Width = 128
           Caption = 'hexadecimal address'
-          OnChange = cbHexAddressModeChange
           TabOrder = 0
+          OnChange = cbHexAddressModeChange
         end
         object cbHexSingleBytes: TCheckBox
           AnchorSideLeft.Control = cbHexAddressMode
@@ -63,9 +63,9 @@ object MainForm: TMainForm
           BorderSpacing.Right = 4
           Caption = 'single bytes'
           Checked = True
-          OnChange = cbHexSingleBytesChange
           State = cbChecked
           TabOrder = 1
+          OnChange = cbHexSingleBytesChange
         end
       end
       object HexSplitter: TSplitter
@@ -129,9 +129,9 @@ object MainForm: TMainForm
           Top = 0
           Caption = 'APP1'
           DropdownMenu = APP1Popup
+          Style = tbsDropDown
           OnArrowClick = TbGotoAPP1ArrowClick
           OnClick = TbGotoMarker
-          Style = tbsDropDown
         end
         object TbGotoAPP2: TToolButton
           Left = 170
@@ -139,8 +139,8 @@ object MainForm: TMainForm
           Top = 0
           Caption = 'APP2'
           DropdownMenu = App2Popup
-          OnClick = TbGotoMarker
           Style = tbsDropDown
+          OnClick = TbGotoMarker
         end
         object TbGotoEOI: TToolButton
           Left = 894
@@ -301,8 +301,8 @@ object MainForm: TMainForm
           Top = 0
           Caption = 'APP13'
           DropdownMenu = APP13Popup
-          OnClick = TbGotoMarker
           Style = tbsDropDown
+          OnClick = TbGotoMarker
         end
         object ToolButton10: TToolButton
           Left = 920
@@ -920,8 +920,8 @@ object MainForm: TMainForm
               OnClick = ValueGridClick
               ColWidths = (
                 64
-                450
-                450
+                459
+                458
               )
             end
           end
