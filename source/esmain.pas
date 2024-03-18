@@ -2984,7 +2984,6 @@ begin
   if FImgInfo.HasExif then begin
     fpExifGridPage.TabVisible := true;
 
-    //FImageOrientation := FImgInfo.ExifData.ImgOrientation;
     FImgInfo.ExifData.ExportOptions := FImgInfo.ExifData.ExportOptions + [eoTruncateBinary];
     ExifGrid.RowCount := FImgInfo.ExifData.TagCount + 1;
     ExifGrid.ColCount := 10;
