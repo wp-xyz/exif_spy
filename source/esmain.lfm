@@ -368,8 +368,6 @@ object MainForm: TMainForm
                   Align = alClient
                   ColCount = 4
                   FixedCols = 0
-                  FocusColor = clRed
-                  FocusRectVisible = True
                   MouseWheelOption = mwGrid
                   Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goDrawFocusSelected, goColSizing, goThumbTracking, goSmoothScroll, goCellHints, goTruncCellHints, goCellEllipsis]
                   RowCount = 2
@@ -870,6 +868,8 @@ object MainForm: TMainForm
                     object SynGutterMarks1: TSynGutterMarks
                       Width = 24
                       MouseActions = <>
+                      MaxExtraMarksColums = 0
+                      Options = [sgmoDeDuplicateMarksOnOverflow]
                     end
                     object SynGutterLineNumber1: TSynGutterLineNumber
                       Width = 17
@@ -917,8 +917,6 @@ object MainForm: TMainForm
               Align = alClient
               AutoFillColumns = True
               ColCount = 3
-              FocusColor = clRed
-              FocusRectVisible = True
               Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goThumbTracking, goSmoothScroll]
               TabOrder = 0
               OnClick = ValueGridClick
@@ -988,8 +986,6 @@ object MainForm: TMainForm
             Top = 0
             Width = 990
             Align = alClient
-            FocusColor = clRed
-            FocusRectVisible = True
             MouseWheelOption = mwGrid
             Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goDrawFocusSelected, goColSizing, goThumbTracking, goSmoothScroll]
             TabOrder = 0
@@ -1006,8 +1002,6 @@ object MainForm: TMainForm
             Top = 0
             Width = 990
             Align = alClient
-            FocusColor = clRed
-            FocusRectVisible = True
             MouseWheelOption = mwGrid
             Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goDrawFocusSelected, goColSizing, goThumbTracking, goSmoothScroll]
             TabOrder = 0

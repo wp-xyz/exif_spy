@@ -1526,7 +1526,7 @@ var
   val: Int64;
   valsng: Single absolute val;
   i, j: Integer;
-  numBytes: byte;
+  numBytes, numBytesLeft: byte;
   s: String;
 //  pTag: PTagEntry;
   pTag: TTagDef;
@@ -1616,7 +1616,14 @@ begin
     inc(AOffset, numbytes);
     inc(j);
 
-    numbytes := 4;
+    numBytes := 4;
+    numBytesLeft := 0;
+    case dt of
+      1: begin numbytes := 1; numbytesLeft := 3; end;
+      3: begin numbytes := 2; numbytesLeft := 2; end;
+      6: begin numbytes := 1; numbytesLeft := 3; end;
+      8: begin numbytes := 2; numbytesLeft := 2; end;
+    end;
     if not GetExifIntValue(AOffset, numbytes, val) then
       exit;
     AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
@@ -1639,10 +1646,11 @@ begin
       s := s + ' --> ' + GetExifValue(ATiffHeaderOffset + val, dt, ds);
     end;
     AnalysisGrid.Cells[2, j] := s;
-    if ds <= 4 then
-      AnalysisGrid.Cells[3, j] := '   Data value' else
-      AnalysisGrid.Cells[3, j] := '   Offset to data --> Data';
-    inc(AOffset, numbytes);
+    if (ds > 4) or (dt in [5, 10]) then
+      AnalysisGrid.Cells[3, j] := '   Offset to data --> Data'
+    else
+      AnalysisGrid.Cells[3, j] := '   Data value';
+    inc(AOffset, numbytes + numBytesLeft);
     inc(j);
   end;
 
@@ -2280,6 +2288,7 @@ var
   b: Byte = 0;
   w: Word = 0;
   dw: DWord = 0;
+  qw: QWord = 0;
 begin
   Result := false;
   if AOffset - AByteCount >= FBufferSize then
