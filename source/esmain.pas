@@ -1527,7 +1527,7 @@ var
   valsng: Single absolute val;
   i, j: Integer;
   numBytes, numBytesLeft: byte;
-  s: String;
+  s, s1: String;
 //  pTag: PTagEntry;
   pTag: TTagDef;
   tagID: TTagIDRec;
@@ -1628,7 +1628,8 @@ begin
       exit;
     AnalysisGrid.Cells[0, j] := Format(OFFSET_MASK, [AOffset]);
     AnalysisGrid.Cells[1, j] := IntToStr(numbytes);
-    if ds <= 4 then
+    if (ds <= 4) and not (dt in [5, 10]) then
+    begin
       case dt of
          2: begin
               SetLength(s, ds);
@@ -1640,16 +1641,16 @@ begin
             end;
         11: s := FloatToStr(valsng);
        else s := IntToStr(val);
-      end
-    else begin
+      end;
+      s1 := '   Data value';
+    end else
+    begin
       s := IntToStr(val);
       s := s + ' --> ' + GetExifValue(ATiffHeaderOffset + val, dt, ds);
+      s1 := '   Offset to data --> Data';
     end;
     AnalysisGrid.Cells[2, j] := s;
-    if (ds > 4) or (dt in [5, 10]) then
-      AnalysisGrid.Cells[3, j] := '   Offset to data --> Data'
-    else
-      AnalysisGrid.Cells[3, j] := '   Data value';
+    AnalysisGrid.Cells[3, j] := s1;
     inc(AOffset, numbytes + numBytesLeft);
     inc(j);
   end;
@@ -2316,7 +2317,7 @@ end;
 
 function TMainForm.GetExifValue(AOffset: Int64; ADataType,ADataSize: Integer): String;
 var
-  n: Int64;
+  n, m: Int64;
   sng: Single;
   dbl: Double;
   i: Integer;
@@ -2349,10 +2350,10 @@ begin
     5: begin  // unsigned rational
          n := PDWord(@FBuffer^[AOffset])^;
          if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
-         Result := IntToStr(n);
-         n := PDWord(@FBuffer^[AOffset + 4])^;
-         if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
-         Result := Result + '/' + IntToStr(n);
+         m := PDWord(@FBuffer^[AOffset + 4])^;
+         if FMotorolaOrder then m := BEToN(m) else m := LEtoN(m);
+         dbl := n / m;
+         Result := Format('%d/%d = %.3g', [n, m, dbl]);
        end;
     6: begin   // singed byte
          Result := IntToStr(ShortInt(@FBuffer^[AOffset]));
@@ -2373,10 +2374,10 @@ begin
    10: begin   // signed rational
          n := LongInt(PDWord(@FBuffer^[AOffset])^);
          if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
-         Result := IntToStr(n);
-         n := LongInt(PDWord(@FBuffer^[AOffset + 4])^);
-         if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
-         Result := Result + '/' + IntToStr(n);
+         m := LongInt(PDWord(@FBuffer^[AOffset + 4])^);
+         if FMotorolaOrder then m := BEToN(m) else m := LEtoN(m);
+         dbl := n / m;
+         Result := Format('%d/%d = %.3g', [n, m, dbl]);
        end;
    11: begin  // single
          sng := PSingle(@FBuffer^[AOffset])^;
