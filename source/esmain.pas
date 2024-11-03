@@ -2352,8 +2352,13 @@ begin
          if FMotorolaOrder then n := BEToN(n) else n := LEtoN(n);
          m := PDWord(@FBuffer^[AOffset + 4])^;
          if FMotorolaOrder then m := BEToN(m) else m := LEtoN(m);
-         dbl := n / m;
-         Result := Format('%d/%d = %.3g', [n, m, dbl]);
+         if m <> 0 then
+         begin
+           dbl := n / m;
+           Result := Format('%d/%d = %.3g', [n, m, dbl]);
+         end
+         else
+           Result := '[ERROR]';
        end;
     6: begin   // singed byte
          Result := IntToStr(ShortInt(@FBuffer^[AOffset]));
